@@ -1,0 +1,6 @@
+name: MyParkour
+version: '$version'
+
+main: me.whizvox.myparkour.MyParkour
+api-version: '26.1.2'
+load: POSTWORLD
