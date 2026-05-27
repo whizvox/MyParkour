@@ -1,5 +1,6 @@
 package me.whizvox.myparkour.course.edit;
 
+import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import me.whizvox.myparkour.course.Checkpoint;
 import me.whizvox.myparkour.course.Course;
@@ -7,7 +8,10 @@ import me.whizvox.myparkour.course.CourseFlag;
 import me.whizvox.myparkour.util.ImmutableLocation;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public class EditableCourse {
 
@@ -61,7 +65,7 @@ public class EditableCourse {
     }
 
     public List<Checkpoint> getCheckpoints() {
-        return Collections.unmodifiableList(checkpoints);
+        return checkpoints;
     }
 
     public @Nullable ImmutableLocation getStart() {
@@ -117,6 +121,14 @@ public class EditableCourse {
         this.start = start;
     }
 
+    public boolean addFlag(CourseFlag flag) {
+        return flags.add(flag);
+    }
+
+    public boolean removeFlag(CourseFlag flag) {
+        return flags.remove(flag);
+    }
+
     public void setExit(ImmutableLocation exit) {
         this.exit = exit;
     }
@@ -125,17 +137,45 @@ public class EditableCourse {
         this.open = open;
     }
 
-    public boolean isValid() {
-        return id > 0 && name != null && !name.isBlank() && displayName != null && !displayName.isBlank() &&
-            !checkpoints.isEmpty() && start != null && exit != null;
+    public ValidResult checkValid() {
+        if (isNew()) {
+            return ValidResult.MISSING_ID;
+        }
+        if (name == null || name.isBlank()) {
+            return ValidResult.MISSING_NAME;
+        }
+        if (displayName == null || displayName.isBlank()) {
+            return ValidResult.MISSING_DISPLAY_NAME;
+        }
+        if (checkpoints.isEmpty()) {
+            return ValidResult.NO_CHECKPOINTS;
+        }
+        if (start == null) {
+            return ValidResult.MISSING_START;
+        }
+        if (exit == null) {
+            return ValidResult.MISSING_EXIT;
+        }
+        return ValidResult.VALID;
     }
 
-    public Optional<Course> toCourse() {
-        if (isValid()) {
+    public Pair<ValidResult, Course> toCourse() {
+        ValidResult result = checkValid();
+        if (result == ValidResult.VALID) {
             //noinspection DataFlowIssue
-            return Optional.of(new Course(id, name, displayName, start, checkpoints, flags, exit, open));
+            return Pair.of(ValidResult.VALID, new Course(id, name, displayName, start, checkpoints, flags, exit, open));
         }
-        return Optional.empty();
+        return Pair.of(result, null);
+    }
+
+    public enum ValidResult {
+        VALID,
+        MISSING_ID,
+        MISSING_NAME,
+        MISSING_DISPLAY_NAME,
+        NO_CHECKPOINTS,
+        MISSING_START,
+        MISSING_EXIT
     }
 
 }

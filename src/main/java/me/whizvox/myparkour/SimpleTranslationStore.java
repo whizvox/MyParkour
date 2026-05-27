@@ -33,27 +33,48 @@ public class SimpleTranslationStore extends MiniMessageTranslator {
         return strings.get(key);
     }
 
+    public String getPlainString(String key) {
+        if (strings.containsKey(key)) {
+            return strings.get(key);
+        }
+        return key;
+    }
+
     @Override
     public Key name() {
         return key;
     }
 
+    private void save(Path path) throws IOException {
+        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.CREATE)) {
+            JsonObject obj = new JsonObject();
+            strings.keySet().stream().sorted().forEach(key -> obj.addProperty(key, strings.get(key)));
+            MyParkour.inst().getGson().toJson(obj, writer);
+        }
+    }
+
     public void load(Path path) throws IOException {
+        strings.clear();
+        Map<String, String> defaultMessages = Messages.getDefaultMessages();
         if (Files.exists(path)) {
             try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
                 JsonObject obj = MyParkour.inst().getGson().fromJson(reader, JsonObject.class);
                 strings.clear();
                 obj.keySet().forEach(key -> strings.put(key, obj.get(key).getAsString()));
             }
-        } else {
-            try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.CREATE)) {
-                JsonObject obj = new JsonObject();
-                Map<String, String> defaultMessages = Messages.getDefaultMessages();
-                defaultMessages.keySet().stream().sorted().forEach(key -> obj.addProperty(key, defaultMessages.get(key)));
-                MyParkour.inst().getGson().toJson(obj, writer);
-                strings.clear();
-                strings.putAll(defaultMessages);
+            boolean missingAnyKeys = false;
+            for (String key : defaultMessages.keySet()) {
+                if (!strings.containsKey(key)) {
+                    strings.put(key, defaultMessages.get(key));
+                    missingAnyKeys = true;
+                }
             }
+            if (missingAnyKeys) {
+                save(path);
+            }
+        } else {
+            strings.putAll(defaultMessages);
+            save(path);
         }
     }
 

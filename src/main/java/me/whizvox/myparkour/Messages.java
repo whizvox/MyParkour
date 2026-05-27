@@ -1,6 +1,8 @@
 package me.whizvox.myparkour;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import me.whizvox.myparkour.core.command.EditCourseCommand;
+import me.whizvox.myparkour.core.command.MyParkourCommand;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TranslatableComponent;
@@ -10,16 +12,11 @@ import java.util.Map;
 
 public class Messages {
 
-    private static String key(String str) {
+    public static String key(String str) {
         return "myparkour." + str;
     }
 
-    public static final String
-        KEY_PREFIX = key("prefix"),
-        KEY_COMMAND_VERSION = key("command.version"),
-        KEY_GENERAL_ALREADY_EDITING_SELF = key("general.alreadyEditing.self"),
-        KEY_GENERAL_ALREADY_EDITING_OTHER = key("general.alreadyEditing.other"),
-        KEY_GENERAL_CANNOT_EDIT_OPEN = key("general.isOpen");
+    public static final String KEY_PREFIX = key("prefix");
 
     @SuppressWarnings("PatternValidation")
     public static TranslatableComponent translate(String key, Map<String, Object> args) {
@@ -41,13 +38,42 @@ public class Messages {
         return Component.translatable(key, tlArgs);
     }
 
+    public static TranslatableComponent translate(String key) {
+        return Component.translatable(key, Argument.component("prefix", Component.translatable(KEY_PREFIX)));
+    }
+
     public static Map<String, String> getDefaultMessages() {
         Map<String, String> m = new Object2ObjectOpenHashMap<>();
         m.put(KEY_PREFIX, "[<bold><gradient:#674fff:#80b3ff>MyParkour</gradient></bold>]");
-        m.put(KEY_COMMAND_VERSION, "<prefix> <aqua>Running <yellow><version></yellow></aqua>");
-        m.put(KEY_GENERAL_ALREADY_EDITING_SELF, "<red>You are already editing a course.</red>");
-        m.put(KEY_GENERAL_ALREADY_EDITING_OTHER, "<red><player> is already editing that course.</red>");
-        m.put(KEY_GENERAL_CANNOT_EDIT_OPEN, "<red>Course cannot be edited while it is open. Run <green>/myparkour close <courseName></green> to close it.</red>");
+        m.put(MyParkourCommand.KEY_VERSION, "<prefix> <aqua>Running <yellow><version></yellow></aqua>");
+        m.put(MyParkourCommand.KEY_RELOAD, "<prefix> <green>Reload complete</green>");
+        m.put(EditCourseCommand.KEY_CREATE, "<green>Successfully created a new parkour course. Use the tools in your hotbar to edit it.</green>");
+        m.put(EditCourseCommand.KEY_EDIT, "<green>Course is now being edited. Run <yellow>/editcourse save</yellow> or <yellow>/editcourse discard</yellow> to stop editing.</green>");
+        m.put(EditCourseCommand.KEY_DISCARD, "<gold>All changes have been discarded.</gold>");
+        m.put(EditCourseCommand.KEY_SAVE, "<green>Course has been saved.</green>");
+        m.put(EditCourseCommand.KEY_SET_NAME, "<green>Course name has been set to <yellow><name></yellow>.</green>");
+        m.put(EditCourseCommand.KEY_SET_DISPLAY_NAME, "<green>Course display name has been set to <displayname>.</green>");
+        m.put(EditCourseCommand.KEY_SET_START, "<green>Course start location has been set to <location>.</green>");
+        m.put(EditCourseCommand.KEY_SET_EXIT, "<green>Course exit location has been set to <location>.</green>");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_ADD, "<green>Added new checkpoint <red>#<index></red> <checkpoint>.</green>");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_LIST_NONE, "<gray>No checkpoints found.</gray>");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_LIST_HEADER, "<aqua>Checkpoints for <yellow><course_name></yellow></aqua>: <checkpoints>");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_INSERT, "<green>Inserted new checkpoint <red>#<index></red> <checkpoint>.</green>");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_REMOVE, "<gold>Removed checkpoint <red>#<index></red>.</gold>");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_SPLIT_ADD, "<green>Added new checkpoint to split <yellow>#<index></yellow> <checkpoint>.");
+        m.put(EditCourseCommand.KEY_CHECKPOINT_SPLIT_REMOVE, "<gold>Removed checkpoint from split.</gold>");
+        m.put(EditCourseCommand.KEY_INVALID_CHECKPOINT_INDEX, "<red>Invalid checkpoint index: <yellow><index></yellow></red>");
+        m.put(EditCourseCommand.KEY_ALREADY_EDITING_SELF, "<red>You are already editing a course.</red>");
+        m.put(EditCourseCommand.KEY_ALREADY_EDITING_OTHER, "<red><yellow><player></yellow> is already editing that course.</red>");
+        m.put(EditCourseCommand.KEY_NOT_EDITING, "<red>You are not currently editing a course.</red>");
+        m.put(EditCourseCommand.KEY_MISSING_NAME, "<red>Cannot save course as it is missing a name.</red>");
+        m.put(EditCourseCommand.KEY_MISSING_DISPLAY_NAME, "<red>Cannot save course as it is missing a display name.</red>");
+        m.put(EditCourseCommand.KEY_NO_CHECKPOINTS, "<red>Cannot save course as it has no checkpoints.</red>");
+        m.put(EditCourseCommand.KEY_MISSING_START, "<red>Cannot save course as it has no start location.</red>");
+        m.put(EditCourseCommand.KEY_MISSING_EXIT, "<red>Cannot save course as it has no exit location.</red>");
+        m.put(EditCourseCommand.KEY_NAME_UNAVAILABLE, "<red>That name is already taken by another course.</red>");
+        m.put(EditCourseCommand.KEY_NOT_FOUND, "<red>Unexpected state: Could not find corresponding course even though you're editing one</red>");
+        m.put(EditCourseCommand.KEY_NOT_SPLIT, "<red>That is not a split checkpoint.</red>");
         return m;
     }
 

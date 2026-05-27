@@ -1,7 +1,6 @@
 package me.whizvox.myparkour.json;
 
 import com.google.gson.*;
-import it.unimi.dsi.fastutil.Pair;
 import me.whizvox.myparkour.course.BlockCheckpoint;
 import me.whizvox.myparkour.course.BoxCheckpoint;
 import me.whizvox.myparkour.course.Checkpoint;
@@ -22,26 +21,31 @@ public class CheckpointJsonCodec implements JsonSerializer<Checkpoint>, JsonDese
     @Override
     public Checkpoint deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject root = json.getAsJsonObject();
-        int id = root.get("id").getAsInt();
         String checkpointType = root.get("type").getAsString();
         return switch (checkpointType) {
-            case "block" -> new BlockCheckpoint(id, context.deserialize(root.get("location"), BlockLocation.class));
-            case "box" -> new BoxCheckpoint(id, context.deserialize(root.get("world"), UUID.class),
+            case "block" -> new BlockCheckpoint(context.deserialize(root.get("location"), BlockLocation.class));
+            case "box" -> new BoxCheckpoint(context.deserialize(root.get("world"), UUID.class),
                 context.deserialize(root.get("box"), ImmutableBoundingBox.class));
             case "split" -> {
-                JsonArray blocksArr = root.getAsJsonArray("blocks");
-                List<BlockLocation> blocks = new ArrayList<>(blocksArr.size());
-                blocksArr.forEach(blockElem -> blocks.add(context.deserialize(blockElem, BlockLocation.class)));
-                JsonArray boxesArr = root.getAsJsonArray("boxes");
-                List<Pair<UUID, ImmutableBoundingBox>> boxes = new ArrayList<>(boxesArr.size());
-                boxesArr.forEach(boxElem -> {
-                    JsonObject boxObj = boxElem.getAsJsonObject();
-                    boxes.add(Pair.of(
-                        context.deserialize(boxObj.get("world"), UUID.class),
-                        context.deserialize(boxObj.get("box"), ImmutableBoundingBox.class)
-                    ));
+                JsonArray areasArr = root.getAsJsonArray("checkpoints");
+                List<Checkpoint> checkpoints = new ArrayList<>(areasArr.size());
+                areasArr.forEach(cpElem -> {
+                    JsonObject cpObj = cpElem.getAsJsonObject();
+                    String cpType = cpObj.get("type").getAsString();
+                    switch (cpType) {
+                        case "block" -> {
+                            BlockLocation loc = context.deserialize(cpObj.get("block"), BlockLocation.class);
+                            checkpoints.add(new BlockCheckpoint(loc));
+                        }
+                        case "box" -> {
+                            ImmutableBoundingBox box = context.deserialize(cpObj.get("box"), ImmutableBoundingBox.class);
+                            UUID worldId = context.deserialize(cpObj.get("world"), UUID.class);
+                            checkpoints.add(new BoxCheckpoint(box, worldId));
+                        }
+                        default -> throw new JsonParseException("Unknown split checkpoint type: " + cpType);
+                    }
                 });
-                yield new SplitCheckpoint(root.get("id").getAsInt(), blocks, boxes);
+                yield new SplitCheckpoint(checkpoints);
             }
             default -> throw new JsonParseException("Invalid checkpoint type: " + checkpointType);
         };
@@ -50,7 +54,6 @@ public class CheckpointJsonCodec implements JsonSerializer<Checkpoint>, JsonDese
     @Override
     public JsonElement serialize(Checkpoint src, Type type, JsonSerializationContext context) {
         JsonObject root = new JsonObject();
-        root.addProperty("id", src.id());
         switch (src) {
             case BlockCheckpoint block -> {
                 root.addProperty("type", "block");
@@ -63,17 +66,24 @@ public class CheckpointJsonCodec implements JsonSerializer<Checkpoint>, JsonDese
             }
             case SplitCheckpoint split -> {
                 root.addProperty("type", "split");
-                JsonArray blocksArr = new JsonArray(split.blocks().size());
-                split.blocks().forEach(loc -> blocksArr.add(context.serialize(loc)));
-                root.add("blocks", blocksArr);
-                JsonArray boxesArr = new JsonArray(split.boxes().size());
-                split.boxes().forEach(pair -> {
-                    JsonObject pairObj = new JsonObject();
-                    pairObj.add("world", context.serialize(pair.left()));
-                    pairObj.add("box", context.serialize(pair.right()));
-                    boxesArr.add(pairObj);
+                JsonArray checkpointsArr = new JsonArray(split.checkpoints().size());
+                split.checkpoints().forEach(checkpoint -> {
+                    JsonObject areaObj = new JsonObject();
+                    switch (checkpoint) {
+                        case BlockCheckpoint block -> {
+                            areaObj.addProperty("type", "block");
+                            areaObj.add("location", context.serialize(block.location()));
+                        }
+                        case BoxCheckpoint box -> {
+                            areaObj.addProperty("type", "box");
+                            areaObj.add("world", context.serialize(box.worldId()));
+                            areaObj.add("box", context.serialize(box.box()));
+                        }
+                        default -> throw new IllegalStateException("Invalid checkpoint type in split checkpoint: " + checkpoint.getClass() + "(" + checkpoint + ")");
+                    }
+                    checkpointsArr.add(areaObj);
                 });
-                root.add("boxes", boxesArr);
+                root.add("checkpoints", checkpointsArr);
             }
             default -> throw new UnsupportedOperationException("Unsupported checkpoint type: " + src.getClass());
         }

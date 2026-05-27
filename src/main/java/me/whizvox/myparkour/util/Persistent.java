@@ -9,7 +9,6 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 public interface Persistent<T> {
 
@@ -20,7 +19,7 @@ public interface Persistent<T> {
     Type getPersistentType();
 
     default void save(Path path) throws IOException {
-        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.CREATE)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
             T obj = writePersistent();
             MyParkour.inst().getGson().toJson(obj, writer);
         }
