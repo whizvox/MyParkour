@@ -7,6 +7,7 @@ import me.whizvox.myparkour.course.Checkpoint;
 import me.whizvox.myparkour.course.SplitCheckpoint;
 import me.whizvox.myparkour.util.BlockLocation;
 import me.whizvox.myparkour.util.ImmutableBoundingBox;
+import me.whizvox.myparkour.util.ImmutableLocation;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -22,27 +23,29 @@ public class CheckpointJsonCodec implements JsonSerializer<Checkpoint>, JsonDese
     public Checkpoint deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject root = json.getAsJsonObject();
         String checkpointType = root.get("type").getAsString();
+        ImmutableLocation respawn = context.deserialize(root.get("respawn"), ImmutableLocation.class);
         return switch (checkpointType) {
-            case "block" -> new BlockCheckpoint(context.deserialize(root.get("location"), BlockLocation.class));
+            case "block" -> new BlockCheckpoint(context.deserialize(root.get("location"), BlockLocation.class), respawn);
             case "box" -> new BoxCheckpoint(context.deserialize(root.get("world"), UUID.class),
-                context.deserialize(root.get("box"), ImmutableBoundingBox.class));
+                context.deserialize(root.get("box"), ImmutableBoundingBox.class), respawn);
             case "split" -> {
                 JsonArray areasArr = root.getAsJsonArray("checkpoints");
                 List<Checkpoint> checkpoints = new ArrayList<>(areasArr.size());
                 areasArr.forEach(cpElem -> {
                     JsonObject cpObj = cpElem.getAsJsonObject();
-                    String cpType = cpObj.get("type").getAsString();
-                    switch (cpType) {
+                    String localType = cpObj.get("type").getAsString();
+                    ImmutableLocation localRespawn = context.deserialize(cpObj.get("respawn"), ImmutableLocation.class);
+                    switch (localType) {
                         case "block" -> {
                             BlockLocation loc = context.deserialize(cpObj.get("block"), BlockLocation.class);
-                            checkpoints.add(new BlockCheckpoint(loc));
+                            checkpoints.add(new BlockCheckpoint(loc, localRespawn));
                         }
                         case "box" -> {
                             ImmutableBoundingBox box = context.deserialize(cpObj.get("box"), ImmutableBoundingBox.class);
                             UUID worldId = context.deserialize(cpObj.get("world"), UUID.class);
-                            checkpoints.add(new BoxCheckpoint(box, worldId));
+                            checkpoints.add(new BoxCheckpoint(box, worldId, localRespawn));
                         }
-                        default -> throw new JsonParseException("Unknown split checkpoint type: " + cpType);
+                        default -> throw new JsonParseException("Unknown split checkpoint type: " + localType);
                     }
                 });
                 yield new SplitCheckpoint(checkpoints);
@@ -68,20 +71,15 @@ public class CheckpointJsonCodec implements JsonSerializer<Checkpoint>, JsonDese
                 root.addProperty("type", "split");
                 JsonArray checkpointsArr = new JsonArray(split.checkpoints().size());
                 split.checkpoints().forEach(checkpoint -> {
-                    JsonObject areaObj = new JsonObject();
-                    switch (checkpoint) {
-                        case BlockCheckpoint block -> {
-                            areaObj.addProperty("type", "block");
-                            areaObj.add("location", context.serialize(block.location()));
-                        }
-                        case BoxCheckpoint box -> {
-                            areaObj.addProperty("type", "box");
-                            areaObj.add("world", context.serialize(box.worldId()));
-                            areaObj.add("box", context.serialize(box.box()));
-                        }
-                        default -> throw new IllegalStateException("Invalid checkpoint type in split checkpoint: " + checkpoint.getClass() + "(" + checkpoint + ")");
+                    JsonObject localObj = context.serialize(checkpoint, Checkpoint.class).getAsJsonObject();
+                    if (checkpoint instanceof BlockCheckpoint) {
+                        localObj.addProperty("type", "block");
+                    } else if (checkpoint instanceof BoxCheckpoint) {
+                        localObj.addProperty("type", "box");
+                    } else {
+                        throw new IllegalStateException("Invalid checkpoint type in split checkpoint: " + checkpoint.getClass() + "(" + checkpoint + ")");
                     }
-                    checkpointsArr.add(areaObj);
+                    checkpointsArr.add(localObj);
                 });
                 root.add("checkpoints", checkpointsArr);
             }

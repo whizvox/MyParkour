@@ -1,5 +1,6 @@
 package me.whizvox.myparkour.course;
 
+import me.whizvox.myparkour.util.ImmutableLocation;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
@@ -11,14 +12,23 @@ public record SplitCheckpoint(List<Checkpoint> checkpoints) implements Checkpoin
         this.checkpoints = Collections.unmodifiableList(checkpoints);
     }
 
-    @Override
-    public boolean isCollidingWith(Player player) {
-        for (Checkpoint checkpoint : checkpoints) {
-            if (checkpoint.isCollidingWith(player)) {
-                return true;
+    public int checkCollidingWith(Player player) {
+        for (int i = 0; i < checkpoints.size(); i++) {
+            if (checkpoints.get(i).isCollidingWith(player)) {
+                return i;
             }
         }
-        return false;
+        return -1;
+    }
+
+    @Override
+    public boolean isCollidingWith(Player player) {
+        return checkCollidingWith(player) != -1;
+    }
+
+    @Override
+    public ImmutableLocation respawn() {
+        return checkpoints.getFirst().respawn();
     }
 
 }

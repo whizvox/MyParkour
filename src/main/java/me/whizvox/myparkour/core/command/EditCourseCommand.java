@@ -50,34 +50,36 @@ public class EditCourseCommand {
         PERMISSION_EDIT = createPermission("course.edit");
 
     public static final String
-        KEY_CREATE = "command.editCourse.create",
-        KEY_EDIT = "command.editCourse.edit",
-        KEY_DISCARD = "command.editCourse.discard",
-        KEY_SAVE = "command.editCourse.save",
-        KEY_SET_NAME = "command.editCourse.set.name",
-        KEY_SET_DISPLAY_NAME = "command.editCourse.set.displayName",
-        KEY_SET_START = "command.editCourse.set.start",
-        KEY_SET_EXIT = "command.editCourse.set.exit",
-        KEY_CHECKPOINT_ADD = "command.editCourse.checkpoint.add",
-        KEY_CHECKPOINT_LIST_NONE = "command.editCourse.checkpoint.list.none",
-        KEY_CHECKPOINT_LIST_HEADER = "command.editCourse.checkpoint.list.header",
-        KEY_CHECKPOINT_INSERT = "command.editCourse.checkpoint.insert",
-        KEY_CHECKPOINT_REMOVE = "command.editCourse.checkpoint.remove",
-        KEY_CHECKPOINT_SPLIT_ADD = "command.editCourse.checkpoint.split.add",
-        KEY_CHECKPOINT_SPLIT_REMOVE = "command.editCourse.checkpoint.split.remove",
-        KEY_INVALID_CHECKPOINT_INDEX = "edit.invalidCheckpointIndex",
-        KEY_ALREADY_EDITING_SELF = "edit.alreadyEditing.self",
-        KEY_ALREADY_EDITING_OTHER = "edit.alreadyEditing.other",
-        KEY_NOT_EDITING = "edit.notEditing",
-        KEY_MISSING_NAME = "edit.missingName",
-        KEY_MISSING_DISPLAY_NAME = "edit.missingDisplayName",
-        KEY_NO_CHECKPOINTS = "edit.noCheckpoints",
-        KEY_MISSING_START = "edit.missingStart",
-        KEY_MISSING_EXIT = "edit.missingExit",
-        KEY_NAME_UNAVAILABLE = "edit.nameUnavailable",
-        KEY_NOT_FOUND = "edit.notFound",
-        KEY_NOT_SPLIT = "edit.notSplit",
-        KEY_INVALID_SPLIT_LOCAL_INDEX = "edit.invalidLocalSplitIndex";
+        KEY_CREATE = "myparkour.edit.create",
+        KEY_EDIT = "myparkour.edit.edit",
+        KEY_DISCARD = "myparkour.edit.discard",
+        KEY_SAVE = "myparkour.edit.save",
+        KEY_SET_NAME = "myparkour.edit.set.name",
+        KEY_SET_DISPLAY_NAME = "myparkour.edit.set.displayName",
+        KEY_SET_START = "myparkour.edit.set.start",
+        KEY_SET_EXIT = "myparkour.edit.set.exit",
+        KEY_CHECKPOINT_ADD = "myparkour.edit.checkpoint.add",
+        KEY_CHECKPOINT_LIST_NONE = "myparkour.edit.checkpoint.list.none",
+        KEY_CHECKPOINT_LIST_HEADER = "myparkour.edit.checkpoint.list.header",
+        KEY_CHECKPOINT_INSERT = "myparkour.edit.checkpoint.insert",
+        KEY_CHECKPOINT_REMOVE = "myparkour.edit.checkpoint.remove",
+        KEY_CHECKPOINT_SPLIT_ADD = "myparkour.edit.checkpoint.split.add",
+        KEY_CHECKPOINT_SPLIT_REMOVE = "myparkour.edit.checkpoint.split.remove",
+        KEY_OPEN = "myparkour.edit.open",
+        KEY_CLOSE = "myparkour.edit.close",
+        KEY_INVALID_CHECKPOINT_INDEX = "myparkour.edit.invalidCheckpointIndex",
+        KEY_ALREADY_EDITING_SELF = "myparkour.edit.alreadyEditing.self",
+        KEY_ALREADY_EDITING_OTHER = "myparkour.edit.alreadyEditing.other",
+        KEY_NOT_EDITING = "myparkour.edit.notEditing",
+        KEY_MISSING_NAME = "myparkour.edit.missingName",
+        KEY_MISSING_DISPLAY_NAME = "myparkour.edit.missingDisplayName",
+        KEY_NO_CHECKPOINTS = "myparkour.edit.noCheckpoints",
+        KEY_MISSING_START = "myparkour.edit.missingStart",
+        KEY_MISSING_EXIT = "myparkour.edit.missingExit",
+        KEY_NAME_UNAVAILABLE = "myparkour.edit.nameUnavailable",
+        KEY_NOT_FOUND = "myparkour.edit.notFound",
+        KEY_NOT_SPLIT = "myparkour.edit.notSplit",
+        KEY_INVALID_SPLIT_LOCAL_INDEX = "myparkour.edit.invalidLocalSplitIndex";
 
     private static int createNewCourse(CommandContext<CommandSourceStack> context) {
         Player player = (Player) context.getSource().getSender();
@@ -351,6 +353,14 @@ public class EditCourseCommand {
         return SINGLE_SUCCESS;
     }
 
+    private static int changeOpenStatus(CommandContext<CommandSourceStack> context, boolean shouldOpen) throws CommandSyntaxException {
+        actOnPlayerCourse(context, course -> {
+            course.setOpen(shouldOpen);
+            context.getSource().getSender().sendMessage(Messages.translate(shouldOpen ? KEY_OPEN : KEY_CLOSE));
+        });
+        return SINGLE_SUCCESS;
+    }
+
     public static void register(Commands commands) {
         commands.register(Commands.literal("editcourse")
             .requires(source -> CommandUtils.playerHasPermission(source, PERMISSION_EDIT))
@@ -395,64 +405,70 @@ public class EditCourseCommand {
                     .executes(context -> setExit(context, ((Player) context.getSource().getSender()).getLocation()))
                 )
             )
-                .then(Commands.literal("checkpoint")
-                    .then(Commands.literal("list")
-                        .executes(EditCourseCommand::listCheckpoints)
-                    )
-                    .then(Commands.literal("add")
-                        .then(Commands.argument("position", ArgumentTypes.blockPosition())
-                            .executes(context -> {
-                                Player player = (Player) context.getSource().getSender();
-                                BlockPosition pos = context.getArgument("position", BlockPositionResolver.class).resolve(context.getSource());
-                                Location loc = pos.toLocation(player.getWorld());
-                                return addCheckpoint(context, new BlockCheckpoint(new BlockLocation(loc)));
-                            })
-                        )
+            .then(Commands.literal("checkpoint")
+                .then(Commands.literal("list")
+                    .executes(EditCourseCommand::listCheckpoints)
+                )
+                .then(Commands.literal("add")
+                    .then(Commands.argument("position", ArgumentTypes.blockPosition())
                         .executes(context -> {
                             Player player = (Player) context.getSource().getSender();
-                            return addCheckpoint(context, new BlockCheckpoint(new BlockLocation(player.getLocation())));
+                            BlockPosition pos = context.getArgument("position", BlockPositionResolver.class).resolve(context.getSource());
+                            Location loc = pos.toLocation(player.getWorld());
+                            return addCheckpoint(context, new BlockCheckpoint(new BlockLocation(loc), new ImmutableLocation(player.getLocation())));
                         })
                     )
-                    .then(Commands.literal("addbox")
-                        .then(Commands.argument("corner1", ArgumentTypes.blockPosition())
-                            .then(Commands.argument("corner2", ArgumentTypes.blockPosition())
-                                .executes(context -> {
-                                    Player player = (Player) context.getSource().getSender();
-                                    BlockPosition corner1 = context.getArgument("corner1", BlockPositionResolver.class).resolve(context.getSource());
-                                    BlockPosition corner2 = context.getArgument("corner2", BlockPositionResolver.class).resolve(context.getSource());
-                                    BoundingBox box = new BoundingBox(corner1.x(), corner1.y(), corner1.z(), corner2.x(), corner2.y(), corner2.z());
-                                    return addCheckpoint(context, new BoxCheckpoint(new ImmutableBoundingBox(box), player.getWorld().getUID()));
-                                })
-                            )
+                    .executes(context -> {
+                        Player player = (Player) context.getSource().getSender();
+                        return addCheckpoint(context, new BlockCheckpoint(new BlockLocation(player.getLocation()), new ImmutableLocation(player.getLocation())));
+                    })
+                )
+                .then(Commands.literal("addbox")
+                    .then(Commands.argument("corner1", ArgumentTypes.blockPosition())
+                        .then(Commands.argument("corner2", ArgumentTypes.blockPosition())
+                            .executes(context -> {
+                                Player player = (Player) context.getSource().getSender();
+                                BlockPosition corner1 = context.getArgument("corner1", BlockPositionResolver.class).resolve(context.getSource());
+                                BlockPosition corner2 = context.getArgument("corner2", BlockPositionResolver.class).resolve(context.getSource());
+                                BoundingBox box = new BoundingBox(corner1.x(), corner1.y(), corner1.z(), corner2.x(), corner2.y(), corner2.z());
+                                return addCheckpoint(context, new BoxCheckpoint(new ImmutableBoundingBox(box), player.getWorld().getUID(), new ImmutableLocation(player.getLocation())));
+                            })
                         )
                     )
-                    .then(Commands.literal("addsplit")
-                        .then(Commands.argument("checkpoints", IntegersArgumentType.integers())
-                            .executes(EditCourseCommand::addSplitCheckpoint)
+                )
+                .then(Commands.literal("addsplit")
+                    .then(Commands.argument("checkpoints", IntegersArgumentType.integers())
+                        .executes(EditCourseCommand::addSplitCheckpoint)
+                    )
+                )
+                .then(Commands.literal("remove")
+                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                        .executes(EditCourseCommand::removeCheckpoint)
+                    )
+                )
+                .then(Commands.literal("split")
+                    .then(Commands.literal("add")
+                        .then(Commands.argument("split", IntegerArgumentType.integer())
+                            .then(Commands.argument("checkpoint", IntegerArgumentType.integer())
+                                .executes(EditCourseCommand::addToSplitCheckpoint)
+                            )
                         )
                     )
                     .then(Commands.literal("remove")
-                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                            .executes(EditCourseCommand::removeCheckpoint)
-                        )
-                    )
-                    .then(Commands.literal("split")
-                        .then(Commands.literal("add")
-                            .then(Commands.argument("split", IntegerArgumentType.integer())
-                                .then(Commands.argument("checkpoint", IntegerArgumentType.integer())
-                                    .executes(EditCourseCommand::addToSplitCheckpoint)
-                                )
-                            )
-                        )
-                        .then(Commands.literal("remove")
-                            .then(Commands.argument("split", IntegerArgumentType.integer())
-                                .then(Commands.argument("index", IntegerArgumentType.integer())
-                                    .executes(EditCourseCommand::removeFromSplitCheckpoint)
-                                )
+                        .then(Commands.argument("split", IntegerArgumentType.integer())
+                            .then(Commands.argument("index", IntegerArgumentType.integer())
+                                .executes(EditCourseCommand::removeFromSplitCheckpoint)
                             )
                         )
                     )
                 )
+            )
+            .then(Commands.literal("open")
+                .executes(context -> changeOpenStatus(context, true))
+            )
+            .then(Commands.literal("close")
+                .executes(context -> changeOpenStatus(context, false))
+            )
             .then(Commands.literal("discard")
                 .executes(context -> stopEditing(context, false))
             )

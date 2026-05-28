@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import me.whizvox.myparkour.core.command.EditCourseCommand;
 import me.whizvox.myparkour.core.command.MyParkourCommand;
+import me.whizvox.myparkour.core.command.ParkourCommand;
 import me.whizvox.myparkour.course.Checkpoint;
 import me.whizvox.myparkour.course.Course;
 import me.whizvox.myparkour.course.CourseFlag;
@@ -18,6 +19,7 @@ import me.whizvox.myparkour.util.BlockLocation;
 import me.whizvox.myparkour.util.ImmutableBoundingBox;
 import me.whizvox.myparkour.util.ImmutableLocation;
 import net.kyori.adventure.translation.GlobalTranslator;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -35,6 +37,8 @@ public final class MyParkour extends JavaPlugin {
     private final CourseEdits edits;
     private final CourseRuns runs;
     private final Leaderboards leaderboards;
+
+    private int updateRunsTaskId;
 
     public MyParkour() {
         instance = this;
@@ -57,6 +61,7 @@ public final class MyParkour extends JavaPlugin {
         edits = new CourseEdits(courses);
         runs = new CourseRuns();
         leaderboards = new Leaderboards();
+        updateRunsTaskId = -1;
     }
 
     public Gson getGson() {
@@ -94,6 +99,7 @@ public final class MyParkour extends JavaPlugin {
             courses.load(paths.coursesFile());
             edits.save(paths.editsFile());
             leaderboards.load(paths.timesFile());
+            getLogger().info("Finished reloading messages, courses, edits, and leaderboards");
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not complete plugin reload. This plugin will most likely behave abnormally!", e);
         }
@@ -106,8 +112,11 @@ public final class MyParkour extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
             MyParkourCommand.register(commands.registrar());
             EditCourseCommand.register(commands.registrar());
+            ParkourCommand.register(commands.registrar());
         });
         reload();
+        updateRunsTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, runs::update, 0, 1);
+        getLogger().info("Scheduled runs updater task");
     }
 
     @Override
@@ -116,9 +125,12 @@ public final class MyParkour extends JavaPlugin {
             edits.save(paths.editsFile());
             leaderboards.save(paths.timesFile());
             courses.save(paths.coursesFile());
+            getLogger().info("Finished saving edits, leaderboards, and courses");
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not save courses or leaderboards", e);
         }
+        Bukkit.getScheduler().cancelTask(updateRunsTaskId);
+        getLogger().info("Cancelled runs updater task");
     }
 
     private static MyParkour instance = null;

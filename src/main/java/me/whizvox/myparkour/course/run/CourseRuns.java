@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @NotNullByDefault
@@ -17,21 +18,25 @@ public class CourseRuns {
         runs = new Object2ObjectOpenHashMap<>();
     }
 
-    public boolean isRunning(Player player) {
-        return runs.containsKey(player.getUniqueId());
+    public Optional<CourseRun> getRun(Player player) {
+        return Optional.ofNullable(runs.get(player.getUniqueId()));
     }
 
     public boolean startRun(Player player, Course course) {
-        if (!isRunning(player)) {
+        if (runs.containsKey(player.getUniqueId())) {
             return false;
         }
-        CourseRun run = new CourseRun(player, course, (i1, i2) -> {}, (i1) -> {});
+        CourseRun run = new CourseRun(player, course);
         runs.put(player.getUniqueId(), run);
         return true;
     }
 
     public void update() {
         runs.values().forEach(CourseRun::update);
+    }
+
+    public Optional<CourseRun> stop(Player player) {
+        return Optional.ofNullable(runs.remove(player.getUniqueId()));
     }
 
 }
