@@ -1,18 +1,19 @@
 package me.whizvox.myparkour.json;
 
 import com.google.gson.*;
+import me.whizvox.myparkour.course.leaderboard.CourseTime;
 import me.whizvox.myparkour.course.leaderboard.MutableCourseTime;
 
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class CourseTimeJsonCodec implements JsonSerializer<MutableCourseTime>, JsonDeserializer<MutableCourseTime> {
+public class CourseTimeJsonCodec implements JsonSerializer<CourseTime>, JsonDeserializer<CourseTime> {
 
     private CourseTimeJsonCodec() {}
 
     @Override
-    public MutableCourseTime deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public CourseTime deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject obj = json.getAsJsonObject();
         return new MutableCourseTime(
             obj.get("id").getAsInt(),
@@ -25,7 +26,7 @@ public class CourseTimeJsonCodec implements JsonSerializer<MutableCourseTime>, J
     }
 
     @Override
-    public JsonElement serialize(MutableCourseTime src, Type type, JsonSerializationContext context) {
+    public JsonElement serialize(CourseTime src, Type type, JsonSerializationContext context) {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", src.id());
         obj.add("player", context.serialize(src.playerId()));

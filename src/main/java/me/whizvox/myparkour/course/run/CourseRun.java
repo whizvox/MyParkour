@@ -12,6 +12,7 @@ import me.whizvox.myparkour.util.WorldUtils;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -25,14 +26,6 @@ import java.util.Map;
 
 @NotNullByDefault
 public class CourseRun {
-
-    public static final String
-        KEY_FINISH = "myparkour.run.finish",
-        KEY_CHECKPOINT = "myparkour.run.checkpoint",
-        KEY_FINISH_FIRST_TIME = "myparkour.run.finish.firstTime",
-        KEY_FINISH_PERSONAL_BEST = "myparkour.run.finish.personalBest",
-        KEY_FINISH_NO_CHANGE = "myparkour.run.finish.noChange",
-        KEY_RUN_FAILED_TO_EXIT = "myparkour.run.failedToExit";
 
     private final Player player;
     private final Course course;
@@ -56,9 +49,9 @@ public class CourseRun {
     private void onCheckpoint(CheckpointCause cause) {
         player.playSound(Sound.sound(Key.key("entity.experience_orb.pickup"), Sound.Source.UI, 1.0f, 1.0f), Sound.Emitter.self());
         if (cause == CheckpointCause.RESTART) {
-            player.showTitle(Title.title(Messages.translate(ParkourCommand.KEY_RUN_START), Component.empty(), 2, 20, 2));
+            player.showTitle(Title.title(Messages.translate("myparkour.run.start", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))), Component.empty(), 2, 20, 2));
         } else if (cause == CheckpointCause.NEXT) {
-            player.showTitle(Title.title(Messages.translate(KEY_CHECKPOINT, Map.of("checkpoint", currentCheckpointIndex + 1, "total", course.checkpoints().size())), Component.empty(), 2, 20, 2));
+            player.showTitle(Title.title(Messages.translate("myparkour.run.nextCheckpoint", Map.of("checkpoint", currentCheckpointIndex, "total", course.checkpoints().size())), Component.empty(), 2, 20, 2));
         }
     }
 
@@ -69,13 +62,13 @@ public class CourseRun {
             String time = StringUtils.formatTime(ticks);
             var result = MyParkour.inst().getLeaderboards().log(player.getUniqueId(), course.id(), ticks);
             Component message = switch (result) {
-                case FIRST_TIME -> Messages.translate(KEY_FINISH_FIRST_TIME, Map.of("time", time));
-                case NEW_PERSONAL_BEST -> Messages.translate(KEY_FINISH_PERSONAL_BEST, Map.of("time", time));
-                case NO_CHANGE -> Messages.translate(KEY_FINISH_NO_CHANGE, Map.of("time", time));
+                case FIRST_TIME -> Messages.translate("myparkour.run.finish.firstTime", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
+                case NEW_PERSONAL_BEST -> Messages.translate("myparkour.run.finish.personalBest", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
+                case NO_CHANGE -> Messages.translate("myparkour.run.finish.noChange", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
             };
             player.sendMessage(message);
             if (!success) {
-                player.sendMessage(Messages.translate(KEY_RUN_FAILED_TO_EXIT));
+                player.sendMessage(Messages.translate("myparkour.error.run.teleportFailed.exit"));
             }
         });
     }

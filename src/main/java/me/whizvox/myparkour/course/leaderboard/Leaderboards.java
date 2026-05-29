@@ -1,6 +1,5 @@
 package me.whizvox.myparkour.course.leaderboard;
 
-import com.google.common.reflect.TypeToken;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -11,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class Leaderboards implements Persistent<List<MutableCourseTime>> {
+public class Leaderboards implements Persistent<LeaderboardTimes> {
 
     private final Int2ObjectMap<MutableCourseTime> times;
     private final Map<PlayerCourseKey, MutableCourseTime> byPlayerAndCourse;
@@ -148,28 +147,29 @@ public class Leaderboards implements Persistent<List<MutableCourseTime>> {
     }
 
     @Override
-    public List<MutableCourseTime> writePersistent() {
-        return new ArrayList<>(times.values());
+    public LeaderboardTimes writePersistent() {
+        return new LeaderboardTimes(new ArrayList<>(times.values()));
     }
 
     @Override
-    public void readPersistent(List<MutableCourseTime> allTimes) {
+    public void readPersistent(LeaderboardTimes allTimes) {
         times.clear();
         byPlayerAndCourse.clear();
         byPlayer.clear();
         byCourse.clear();
-        allTimes.forEach(time -> {
-            times.put(time.id(), time);
-            byPlayerAndCourse.put(new PlayerCourseKey(time.playerId(), time.courseId()), time);
-            byPlayer.computeIfAbsent(time.playerId(), _ -> new ArrayList<>()).add(time);
-            byCourse.computeIfAbsent(time.courseId(), _ -> new ArrayList<>()).add(time);
+        allTimes.times().forEach(time -> {
+            MutableCourseTime mutTime = time.toMutable();
+            times.put(time.id(), mutTime);
+            byPlayerAndCourse.put(new PlayerCourseKey(time.playerId(), time.courseId()), mutTime);
+            byPlayer.computeIfAbsent(time.playerId(), _ -> new ArrayList<>()).add(mutTime);
+            byCourse.computeIfAbsent(time.courseId(), _ -> new ArrayList<>()).add(mutTime);
         });
         byCourse.values().forEach(Leaderboards::resortCourseTimes);
     }
 
     @Override
     public Type getPersistentType() {
-        return new TypeToken<ArrayList<CourseTime>>(){}.getType();
+        return LeaderboardTimes.class;
     }
 
     public enum AddResult {

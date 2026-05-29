@@ -74,6 +74,17 @@ public class Messages {
         m.put(EditCourseCommand.KEY_NAME_UNAVAILABLE, "<red>That name is already taken by another course.</red>");
         m.put(EditCourseCommand.KEY_NOT_FOUND, "<red>Unexpected state: Could not find corresponding course even though you're editing one</red>");
         m.put(EditCourseCommand.KEY_NOT_SPLIT, "<red>That is not a split checkpoint.</red>");
+        m.put("myparkour.run.start", "<green>Running <course></green>");
+        m.put("myparkour.run.exit", "Exited <course>");
+        m.put("myparkour.run.nextCheckpoint", "<green>Checkpoint <yellow><checkpoint></yellow>/<yellow><total></yellow></green>");
+        m.put("myparkour.run.finish.firstTime", "<green>You beat <course> for the first time in <time>!</green>");
+        m.put("myparkour.run.finish.personalBest", "<green>You achieved a new personal best on <course> in <time>!</green>");
+        m.put("myparkour.run.finish.noChange", "<green>You beat <course> in <time>.</green>");
+        m.put("myparkour.error.run.alreadyRunning", "<red>You are already running in a course.</red>");
+        m.put("myparkour.error.run.notRunning", "<red>You are not currently running in a course.</red>");
+        m.put("myparkour.error.run.notOpen", "<red>That course is currently not open.</red>");
+        m.put("myparkour.error.run.teleportFailed.start", "<red>Failed to teleport to the start of the course.</red>");
+        m.put("myparkour.error.run.teleportFailed.exit", "<red>Failed to teleport to the exit of the course.</red>");
         return m;
     }
 

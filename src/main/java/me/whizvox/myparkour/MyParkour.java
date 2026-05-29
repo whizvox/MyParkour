@@ -12,6 +12,7 @@ import me.whizvox.myparkour.course.CourseFlag;
 import me.whizvox.myparkour.course.Courses;
 import me.whizvox.myparkour.course.edit.CourseEdits;
 import me.whizvox.myparkour.course.leaderboard.CourseTime;
+import me.whizvox.myparkour.course.leaderboard.LeaderboardTimes;
 import me.whizvox.myparkour.course.leaderboard.Leaderboards;
 import me.whizvox.myparkour.course.run.CourseRuns;
 import me.whizvox.myparkour.json.*;
@@ -52,6 +53,7 @@ public final class MyParkour extends JavaPlugin {
             .registerTypeAdapter(CourseTime.class, CourseTimeJsonCodec.INSTANCE)
             .registerTypeAdapter(ImmutableBoundingBox.class, ImmutableBoundingBoxJsonCodec.INSTANCE)
             .registerTypeAdapter(ImmutableLocation.class, ImmutableLocationJsonCodec.INSTANCE)
+            .registerTypeAdapter(LeaderboardTimes.class, LeaderboardTimesJsonCodec.INSTANCE)
             .registerTypeAdapter(LocalDateTime.class, LocalDateTimeJsonCodec.INSTANCE)
             .registerTypeAdapter(UUID.class, UUIDJsonCodec.INSTANCE)
             .create();

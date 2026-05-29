@@ -66,6 +66,12 @@ public class MutableCourseTime implements CourseTime {
         this.rank = rank;
     }
 
+    @Override
+    public MutableCourseTime toMutable() {
+        return this;
+    }
+
+    @Override
     public ImmutableCourseTime toImmutable() {
         return new ImmutableCourseTime(id, playerId, courseId, when, time, rank);
     }

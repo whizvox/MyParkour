@@ -27,6 +27,10 @@ public interface CourseTime extends Comparable<CourseTime> {
         return Duration.ofMillis(50L * time());
     }
 
+    MutableCourseTime toMutable();
+
+    ImmutableCourseTime toImmutable();
+
     @Override
     default int compareTo(@NotNull CourseTime o) {
         return COMPARATOR.compare(this, o);
