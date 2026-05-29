@@ -49,9 +49,9 @@ public class CourseRun {
     private void onCheckpoint(CheckpointCause cause) {
         player.playSound(Sound.sound(Key.key("entity.experience_orb.pickup"), Sound.Source.UI, 1.0f, 1.0f), Sound.Emitter.self());
         if (cause == CheckpointCause.RESTART) {
-            player.showTitle(Title.title(Messages.translate("myparkour.run.start", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))), Component.empty(), 2, 20, 2));
+            player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))), 2, 20, 2));
         } else if (cause == CheckpointCause.NEXT) {
-            player.showTitle(Title.title(Messages.translate("myparkour.run.nextCheckpoint", Map.of("checkpoint", currentCheckpointIndex, "total", course.checkpoints().size())), Component.empty(), 2, 20, 2));
+            player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.nextCheckpoint", Map.of("checkpoint", currentCheckpointIndex, "total", course.checkpoints().size() - 1, "time", StringUtils.formatTime(getTime()))), 2, 20, 2));
         }
     }
 

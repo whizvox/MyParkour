@@ -76,10 +76,10 @@ public class Messages {
         m.put(EditCourseCommand.KEY_NOT_SPLIT, "<red>That is not a split checkpoint.</red>");
         m.put("myparkour.run.start", "<green>Running <course></green>");
         m.put("myparkour.run.exit", "Exited <course>");
-        m.put("myparkour.run.nextCheckpoint", "<green>Checkpoint <yellow><checkpoint></yellow>/<yellow><total></yellow></green>");
-        m.put("myparkour.run.finish.firstTime", "<green>You beat <course> for the first time in <time>!</green>");
-        m.put("myparkour.run.finish.personalBest", "<green>You achieved a new personal best on <course> in <time>!</green>");
-        m.put("myparkour.run.finish.noChange", "<green>You beat <course> in <time>.</green>");
+        m.put("myparkour.run.nextCheckpoint", "<green>Checkpoint <yellow><checkpoint></yellow>/<yellow><total></yellow></green> | <red><time></red>");
+        m.put("myparkour.run.finish.firstTime", "<aqua>You beat <course> for the first time in <yellow><time></yellow>!</aqua>");
+        m.put("myparkour.run.finish.personalBest", "<aqua>You achieved a new personal best on <course> in <yellow><time></yellow>!</aqua>");
+        m.put("myparkour.run.finish.noChange", "<green>You beat <course> in <yellow><time></yellow>.</green>");
         m.put("myparkour.error.run.alreadyRunning", "<red>You are already running in a course.</red>");
         m.put("myparkour.error.run.notRunning", "<red>You are not currently running in a course.</red>");
         m.put("myparkour.error.run.notOpen", "<red>That course is currently not open.</red>");
