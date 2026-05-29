@@ -16,6 +16,7 @@ import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.command.CommandConsumer;
 import me.whizvox.myparkour.command.CourseArgumentType;
+import me.whizvox.myparkour.command.CourseFlagArgumentType;
 import me.whizvox.myparkour.command.IntegersArgumentType;
 import me.whizvox.myparkour.core.CommandExceptionTypes;
 import me.whizvox.myparkour.course.*;
@@ -49,38 +50,6 @@ public class EditCourseCommand {
         PERMISSION_CREATE = createPermission("course.create"),
         PERMISSION_EDIT = createPermission("course.edit");
 
-    public static final String
-        KEY_CREATE = "myparkour.edit.create",
-        KEY_EDIT = "myparkour.edit.edit",
-        KEY_DISCARD = "myparkour.edit.discard",
-        KEY_SAVE = "myparkour.edit.save",
-        KEY_SET_NAME = "myparkour.edit.set.name",
-        KEY_SET_DISPLAY_NAME = "myparkour.edit.set.displayName",
-        KEY_SET_START = "myparkour.edit.set.start",
-        KEY_SET_EXIT = "myparkour.edit.set.exit",
-        KEY_CHECKPOINT_ADD = "myparkour.edit.checkpoint.add",
-        KEY_CHECKPOINT_LIST_NONE = "myparkour.edit.checkpoint.list.none",
-        KEY_CHECKPOINT_LIST_HEADER = "myparkour.edit.checkpoint.list.header",
-        KEY_CHECKPOINT_INSERT = "myparkour.edit.checkpoint.insert",
-        KEY_CHECKPOINT_REMOVE = "myparkour.edit.checkpoint.remove",
-        KEY_CHECKPOINT_SPLIT_ADD = "myparkour.edit.checkpoint.split.add",
-        KEY_CHECKPOINT_SPLIT_REMOVE = "myparkour.edit.checkpoint.split.remove",
-        KEY_OPEN = "myparkour.edit.open",
-        KEY_CLOSE = "myparkour.edit.close",
-        KEY_INVALID_CHECKPOINT_INDEX = "myparkour.edit.invalidCheckpointIndex",
-        KEY_ALREADY_EDITING_SELF = "myparkour.edit.alreadyEditing.self",
-        KEY_ALREADY_EDITING_OTHER = "myparkour.edit.alreadyEditing.other",
-        KEY_NOT_EDITING = "myparkour.edit.notEditing",
-        KEY_MISSING_NAME = "myparkour.edit.missingName",
-        KEY_MISSING_DISPLAY_NAME = "myparkour.edit.missingDisplayName",
-        KEY_NO_CHECKPOINTS = "myparkour.edit.noCheckpoints",
-        KEY_MISSING_START = "myparkour.edit.missingStart",
-        KEY_MISSING_EXIT = "myparkour.edit.missingExit",
-        KEY_NAME_UNAVAILABLE = "myparkour.edit.nameUnavailable",
-        KEY_NOT_FOUND = "myparkour.edit.notFound",
-        KEY_NOT_SPLIT = "myparkour.edit.notSplit",
-        KEY_INVALID_SPLIT_LOCAL_INDEX = "myparkour.edit.invalidLocalSplitIndex";
-
     private static int createNewCourse(CommandContext<CommandSourceStack> context) {
         Player player = (Player) context.getSource().getSender();
         String name = StringArgumentType.getString(context, "name");
@@ -89,8 +58,8 @@ public class EditCourseCommand {
         course.setDisplayName(name);
         var result = MyParkour.inst().getEdits().setEditingCourse(player, course);
         switch (result) {
-            case SUCCESS -> player.sendMessage(Messages.translate(KEY_CREATE));
-            case PLAYER_EDITING -> player.sendMessage(Messages.translate(KEY_ALREADY_EDITING_SELF, Map.of("course",
+            case SUCCESS -> player.sendMessage(Messages.translate("myparkour.edit.create.success"));
+            case PLAYER_EDITING -> player.sendMessage(Messages.translate("myparkour.edit.warning.alreadyEditing", Map.of("course",
                 MyParkour.inst().getEdits().getEditing(player)
                     .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "(unnamed)"))
                     .orElse("(unknown)")
@@ -103,28 +72,32 @@ public class EditCourseCommand {
     private static int editCourse(CommandContext<CommandSourceStack> context) {
         Player player = (Player) context.getSource().getSender();
         Course course = CourseArgumentType.getCourse(context, "course");
-        EditableCourse edit = new EditableCourse(course);
-        var result = MyParkour.inst().getEdits().setEditingCourse(player, edit);
-        switch (result) {
-            case SUCCESS -> player.sendMessage(Messages.translate(KEY_EDIT));
-            case PLAYER_EDITING -> {
-                String courseName = MyParkour.inst().getEdits().getEditing(player)
-                    .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "(unnamed)"))
-                    .orElseThrow();
-                player.sendMessage(Messages.translate(KEY_ALREADY_EDITING_SELF, Map.of("course", courseName)));
+        if (!course.open()) {
+            EditableCourse edit = new EditableCourse(course);
+            var result = MyParkour.inst().getEdits().setEditingCourse(player, edit);
+            switch (result) {
+                case SUCCESS -> player.sendMessage(Messages.translate("myparkour.edit.edit.success", Map.of("course", course.name())));
+                case PLAYER_EDITING -> {
+                    String courseName = MyParkour.inst().getEdits().getEditing(player)
+                        .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "???"))
+                        .orElseThrow();
+                    player.sendMessage(Messages.translate("myparkour.edit.warning.alreadyEditing.self", Map.of("course", courseName)));
+                }
+                case COURSE_EDITED -> {
+                    Component playerName = MyParkour.inst().getEdits().getPlayer(course.id()).map(otherPlayerId -> {
+                        Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+                        if (otherPlayer != null) {
+                            return otherPlayer.displayName();
+                        } else {
+                            return Component.text(otherPlayerId.toString(), NamedTextColor.RED);
+                        }
+                    }).orElseThrow();
+                    player.sendMessage(Messages.translate("myparkour.edit.warning.alreadyEditing.other", Map.of("player", playerName)));
+                }
+                default -> throw new IllegalStateException("Illegal result while editing course: " + result);
             }
-            case COURSE_EDITED -> {
-                Component playerName = MyParkour.inst().getEdits().getPlayer(course.id()).map(otherPlayerId -> {
-                    Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
-                    if (otherPlayer != null) {
-                        return otherPlayer.displayName();
-                    } else {
-                        return Component.text(otherPlayerId.toString(), NamedTextColor.RED);
-                    }
-                }).orElseThrow();
-                player.sendMessage(Messages.translate(KEY_ALREADY_EDITING_OTHER, Map.of("player", playerName)));
-            }
-            default -> throw new IllegalStateException("Illegal result while editing course: " + result);
+        } else {
+            player.sendMessage(Messages.translate("myparkour.edit.edit.cannotBeOpen", Map.of("course", course.name())));
         }
         return SINGLE_SUCCESS;
     }
@@ -142,27 +115,27 @@ public class EditCourseCommand {
                             throw new RuntimeException(e);
                         }
                     }
-                    player.sendMessage(Messages.translate(saveChanges ? KEY_SAVE : KEY_DISCARD));
+                    player.sendMessage(Messages.translate(saveChanges ? "myparkour.edit.save" : "myparkour.edit.discard"));
                 }
                 case INVALID -> {
                     EditableCourse edit = MyParkour.inst().getEdits().getEditing(player).orElseThrow();
                     var validResult = edit.checkValid();
                     String msgKey = switch (validResult) {
-                        case MISSING_NAME -> KEY_MISSING_NAME;
-                        case MISSING_DISPLAY_NAME -> KEY_MISSING_DISPLAY_NAME;
-                        case NO_CHECKPOINTS -> KEY_NO_CHECKPOINTS;
-                        case MISSING_START -> KEY_MISSING_START;
-                        case MISSING_EXIT -> KEY_MISSING_EXIT;
+                        case MISSING_NAME -> "myparkour.edit.save.missingName";
+                        case MISSING_DISPLAY_NAME -> "myparkour.edit.save.missingDisplayName";
+                        case NO_CHECKPOINTS -> "myparkour.edit.save.noCheckpoints";
+                        case MISSING_START -> "myparkour.edit.save.missingStart";
+                        case MISSING_EXIT -> "myparkour.edit.save.missingExit";
                         default ->
                             throw new IllegalStateException("Illegal state for editable course validation: " + validResult);
                     };
                     player.sendMessage(Messages.translate(msgKey, Map.of("name", Objects.requireNonNullElse(edit.getName(), "(unnamed)"), "id", edit.getId())));
                 }
-                case NAME_UNAVAILABLE -> player.sendMessage(KEY_NAME_UNAVAILABLE);
-                case NOT_FOUND -> player.sendMessage(KEY_NOT_FOUND);
+                case NAME_UNAVAILABLE -> player.sendMessage("myparkour.edit.save.nameUnavailable");
+                case NOT_FOUND -> player.sendMessage("myparkour.edit.save.notFound");
             }
         } else {
-            player.sendMessage(Messages.translate(KEY_NOT_EDITING));
+            player.sendMessage(Messages.translate("myparkour.edit.warning.notEditing"));
         }
         return SINGLE_SUCCESS;
     }
@@ -177,7 +150,7 @@ public class EditCourseCommand {
                         throw new RuntimeException(e);
                     }
                 },
-                () -> context.getSource().getSender().sendMessage(Messages.translate(KEY_NOT_EDITING))
+                () -> context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.notEditing"))
             );
         } catch (RuntimeException e) {
             if (e.getCause() instanceof CommandSyntaxException cse) {
@@ -202,7 +175,7 @@ public class EditCourseCommand {
             context,
             start,
             (course, loc) -> course.setStart(new ImmutableLocation(loc)),
-            (sender, loc) -> sender.sendMessage(Messages.translate(KEY_SET_START, Map.of("location", MiniMessageUtils.formatLocation(loc))))
+            (sender, loc) -> sender.sendMessage(Messages.translate("myparkour.edit.set.start", Map.of("location", MiniMessageUtils.formatLocation(loc))))
         );
     }
 
@@ -211,7 +184,7 @@ public class EditCourseCommand {
             context,
             exit,
             (course, loc) -> course.setExit(new ImmutableLocation(loc)),
-            (sender, loc) -> sender.sendMessage(Messages.translate(KEY_SET_EXIT, Map.of("location", MiniMessageUtils.formatLocation(loc))))
+            (sender, loc) -> sender.sendMessage(Messages.translate("myparkour.edit.set.exit", Map.of("location", MiniMessageUtils.formatLocation(loc))))
         );
     }
 
@@ -222,24 +195,24 @@ public class EditCourseCommand {
                 context,
                 name,
                 EditableCourse::setName,
-                (sender, s) -> sender.sendMessage(Messages.translate(KEY_SET_NAME, Map.of("name", s)))
+                (sender, s) -> sender.sendMessage(Messages.translate("myparkour.edit.set.name", Map.of("name", s)))
             );
         } else {
-            context.getSource().getSender().sendMessage(Messages.translate(KEY_NAME_UNAVAILABLE));
+            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.nameUnavailable"));
         }
         return SINGLE_SUCCESS;
     }
 
     private static int setDisplayName(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String displayName = StringArgumentType.getString(context, "displayname");
-        setProperty(context, displayName, EditableCourse::setDisplayName, (sender, s) -> sender.sendMessage(Messages.translate(KEY_SET_DISPLAY_NAME, Map.of("displayname", MiniMessage.miniMessage().deserialize(s)))));
+        setProperty(context, displayName, EditableCourse::setDisplayName, (sender, s) -> sender.sendMessage(Messages.translate("myparkour.edit.set.displayName", Map.of("displayname", MiniMessage.miniMessage().deserialize(s)))));
         return SINGLE_SUCCESS;
     }
 
     private static int listCheckpoints(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         actOnPlayerCourse(context, course -> {
             if (course.getCheckpoints().isEmpty()) {
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_LIST_NONE));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.list.none"));
             } else {
                 Component comp = Component.empty();
                 for (int i = 0; i < course.getCheckpoints().size(); i++) {
@@ -249,7 +222,7 @@ public class EditCourseCommand {
                     }
                     comp = comp.append(Component.text("[" + (i + 1) + "]", NamedTextColor.AQUA, TextDecoration.UNDERLINED).hoverEvent(HoverEvent.showText(MiniMessageUtils.formatCheckpoint(checkpoint))));
                 }
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_LIST_HEADER, Map.of("course_name", Objects.requireNonNullElse(course.getName(), "???"), "checkpoints", comp)));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.list.header", Map.of("course_name", Objects.requireNonNullElse(course.getName(), "???"), "checkpoints", comp)));
             }
         });
         return SINGLE_SUCCESS;
@@ -258,7 +231,7 @@ public class EditCourseCommand {
     private static int addCheckpoint(CommandContext<CommandSourceStack> context, Checkpoint checkpoint) throws CommandSyntaxException {
         actOnPlayerCourse(context, course -> {
             course.addCheckpoint(checkpoint);
-            context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_ADD, Map.of("index", course.getCheckpoints().size(), "checkpoint", MiniMessageUtils.formatCheckpoint(checkpoint))));
+            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.add", Map.of("index", course.getCheckpoints().size(), "checkpoint", MiniMessageUtils.formatCheckpoint(checkpoint))));
         });
         return SINGLE_SUCCESS;
     }
@@ -268,9 +241,9 @@ public class EditCourseCommand {
             int index = context.getArgument("index", Integer.class);
             if (index <= course.getCheckpoints().size()) {
                 course.getCheckpoints().remove(index);
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_REMOVE));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.remove"));
             } else {
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_INVALID_CHECKPOINT_INDEX, Map.of("index", index)));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.invalidCheckpointIndex", Map.of("index", index)));
             }
         });
         return SINGLE_SUCCESS;
@@ -306,7 +279,7 @@ public class EditCourseCommand {
             });
             Checkpoint checkpoint = new SplitCheckpoint(checkpoints);
             course.addCheckpoint(checkpoint);
-            context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_ADD, Map.of("checkpoint", checkpoint)));
+            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.add", Map.of("checkpoint", checkpoint)));
         });
         return SINGLE_SUCCESS;
     }
@@ -323,9 +296,9 @@ public class EditCourseCommand {
                 SplitCheckpoint newSplit = new SplitCheckpoint(newCheckpoints);
                 course.getCheckpoints().set(splitIndex - 1, newSplit);
                 course.getCheckpoints().remove(checkpointIndex - 1);
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_SPLIT_ADD));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.split.add"));
             } else {
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_NOT_SPLIT));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.notSplit"));
             }
         });
         return SINGLE_SUCCESS;
@@ -342,22 +315,53 @@ public class EditCourseCommand {
                     newCheckpoints.remove(localIndex - 1);
                     SplitCheckpoint newSplit = new SplitCheckpoint(newCheckpoints);
                     course.getCheckpoints().set(splitIndex - 1, newSplit);
-                    context.getSource().getSender().sendMessage(Messages.translate(KEY_CHECKPOINT_SPLIT_REMOVE));
+                    context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.split.remove"));
                 } else {
-                    context.getSource().getSender().sendMessage(Messages.translate(KEY_INVALID_SPLIT_LOCAL_INDEX, Map.of("index", localIndex)));
+                    context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.invalidSplitLocalIndex", Map.of("index", localIndex)));
                 }
             } else {
-                context.getSource().getSender().sendMessage(Messages.translate(KEY_NOT_SPLIT));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.notSplit"));
+            }
+        });
+        return SINGLE_SUCCESS;
+    }
+
+    private static int changeFlagStatus(CommandContext<CommandSourceStack> context, boolean shouldSet) throws CommandSyntaxException {
+        actOnPlayerCourse(context, course -> {
+            CommandSender sender = context.getSource().getSender();
+            CourseFlag flag = CourseFlagArgumentType.getFlag(context, "flag");
+            if (shouldSet) {
+                if (course.addFlag(flag)) {
+                    sender.sendMessage(Messages.translate("myparkour.edit.flag.set.success", Map.of("flag", flag, "course", Objects.requireNonNullElse(course.getName(), "???"))));
+                } else {
+                    sender.sendMessage(Messages.translate("myparkour.edit.flag.set.alreadySet"));
+                }
+            } else {
+                if (course.removeFlag(flag)) {
+                    sender.sendMessage(Messages.translate("myparkour.edit.flag.unset.success", Map.of("flag", flag, "course", Objects.requireNonNullElse(course.getName(), "???"))));
+                } else {
+                    sender.sendMessage(Messages.translate("myparkour.edit.flag.unset.notSet"));
+                }
             }
         });
         return SINGLE_SUCCESS;
     }
 
     private static int changeOpenStatus(CommandContext<CommandSourceStack> context, boolean shouldOpen) throws CommandSyntaxException {
-        actOnPlayerCourse(context, course -> {
-            course.setOpen(shouldOpen);
-            context.getSource().getSender().sendMessage(Messages.translate(shouldOpen ? KEY_OPEN : KEY_CLOSE));
-        });
+        Course course = CourseArgumentType.getCourse(context, "course");
+        CommandSender sender = context.getSource().getSender();
+        if (shouldOpen != course.open()) {
+            EditableCourse edit = new EditableCourse(course);
+            edit.setOpen(shouldOpen);
+            var result = MyParkour.inst().getCourses().edit(edit);
+            if (result == Courses.EditResult.SUCCESS) {
+                sender.sendMessage(Messages.translate(shouldOpen ? "myparkour.edit.open" : "myparkour.edit.close", Map.of("course", course.name())));
+            } else {
+                sender.sendMessage(Messages.translate("myparkour.edit.error.couldNotSave", Map.of("reason", result)));
+            }
+        } else {
+            sender.sendMessage(Messages.translate(shouldOpen ? "myparkour.edit.open.alreadyOpen" : "myparkour.edit.close.alreadyClosed"));
+        }
         return SINGLE_SUCCESS;
     }
 
@@ -463,11 +467,27 @@ public class EditCourseCommand {
                     )
                 )
             )
+            .then(Commands.literal("flag")
+                .then(Commands.literal("set")
+                    .then(Commands.argument("flag", CourseFlagArgumentType.flag())
+                        .executes(context -> changeFlagStatus(context, true))
+                    )
+                )
+                .then(Commands.literal("unset")
+                    .then(Commands.argument("flag", CourseFlagArgumentType.flag())
+                        .executes(context -> changeFlagStatus(context, false))
+                    )
+                )
+            )
             .then(Commands.literal("open")
-                .executes(context -> changeOpenStatus(context, true))
+                .then(Commands.argument("course", CourseArgumentType.course())
+                    .executes(context -> changeOpenStatus(context, true))
+                )
             )
             .then(Commands.literal("close")
-                .executes(context -> changeOpenStatus(context, false))
+                .then(Commands.argument("course", CourseArgumentType.course())
+                    .executes(context -> changeOpenStatus(context, false))
+                )
             )
             .then(Commands.literal("discard")
                 .executes(context -> stopEditing(context, false))
