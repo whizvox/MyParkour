@@ -86,7 +86,7 @@ public class Leaderboards implements Persistent<LeaderboardTimes> {
     public AddResult log(UUID playerId, int courseId, int time) {
         MutableCourseTime oldTime = byPlayerAndCourse.get(new PlayerCourseKey(playerId, courseId));
         if (oldTime != null) {
-            if (oldTime.time() < time) {
+            if (oldTime.time() <= time) {
                 return AddResult.NO_CHANGE;
             }
             oldTime.setWhen(LocalDateTime.now());

@@ -1,8 +1,8 @@
 package me.whizvox.myparkour.course.run;
 
+import io.papermc.paper.block.fluid.FluidData;
 import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
-import me.whizvox.myparkour.core.command.ParkourCommand;
 import me.whizvox.myparkour.course.Checkpoint;
 import me.whizvox.myparkour.course.Course;
 import me.whizvox.myparkour.course.CourseFlag;
@@ -15,9 +15,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Fluid;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -33,7 +32,8 @@ public class CourseRun {
     private int currentCheckpointIndex;
     private int lastSplitCheckpointIndex;
     private Checkpoint currentCheckpoint;
-    private boolean checkWater, checkLava;
+    private final boolean checkWater;
+    private final boolean checkLava;
 
     public CourseRun(Player player, Course course) {
         this.player = player;
@@ -62,13 +62,16 @@ public class CourseRun {
             String time = StringUtils.formatTime(ticks);
             var result = MyParkour.inst().getLeaderboards().log(player.getUniqueId(), course.id(), ticks);
             Component message = switch (result) {
-                case FIRST_TIME -> Messages.translate("myparkour.run.finish.firstTime", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
-                case NEW_PERSONAL_BEST -> Messages.translate("myparkour.run.finish.personalBest", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
-                case NO_CHANGE -> Messages.translate("myparkour.run.finish.noChange", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
+                case FIRST_TIME ->
+                    Messages.translate("myparkour.run.finish.firstTime", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
+                case NEW_PERSONAL_BEST ->
+                    Messages.translate("myparkour.run.finish.personalBest", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
+                case NO_CHANGE ->
+                    Messages.translate("myparkour.run.finish.noChange", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "time", time));
             };
             player.sendMessage(message);
             if (!success) {
-                player.sendMessage(Messages.translate("myparkour.error.run.teleportFailed.exit"));
+                player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
             }
         });
     }
@@ -115,10 +118,14 @@ public class CourseRun {
 
     public void update() {
         if (checkWater || checkLava) {
-            for (Block block : WorldUtils.getTouchingBlocks(player)) {
-                if ((checkWater && block.getType() == Material.WATER) || (checkLava && block.getType() == Material.LAVA)) {
-                    teleportToLastCheckpoint();
-                }
+            boolean shouldReset = WorldUtils.getBlocksTouchingPlayer(player).anyMatch(block -> {
+                FluidData fluid = block.getWorld().getFluidData(block.getX(), block.getY(), block.getZ());
+                return fluid.getFluidType() != Fluid.EMPTY &&
+                    ((checkWater && (fluid.getFluidType() == Fluid.WATER || fluid.getFluidType() == Fluid.FLOWING_WATER)) ||
+                        (checkLava && (fluid.getFluidType() == Fluid.LAVA || fluid.getFluidType() == Fluid.FLOWING_LAVA)));
+            });
+            if (shouldReset) {
+                teleportToLastCheckpoint();
             }
         }
         if (currentCheckpoint.isCollidingWith(player)) {

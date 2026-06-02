@@ -91,11 +91,11 @@ public class Messages {
         m.put("myparkour.run.finish.firstTime", "<aqua>You beat <course> for the first time in <yellow><time></yellow>!</aqua>");
         m.put("myparkour.run.finish.personalBest", "<aqua>You achieved a new personal best on <course> in <yellow><time></yellow>!</aqua>");
         m.put("myparkour.run.finish.noChange", "<green>You beat <course> in <yellow><time></yellow>.</green>");
-        m.put("myparkour.error.run.alreadyRunning", "<red>You are already running in a course.</red>");
-        m.put("myparkour.error.run.notRunning", "<red>You are not currently running in a course.</red>");
-        m.put("myparkour.error.run.notOpen", "<red>That course is currently not open.</red>");
-        m.put("myparkour.error.run.teleportFailed.start", "<red>Failed to teleport to the start of the course.</red>");
-        m.put("myparkour.error.run.teleportFailed.exit", "<red>Failed to teleport to the exit of the course.</red>");
+        m.put("myparkour.run.error.alreadyRunning", "<red>You are already running in a course.</red>");
+        m.put("myparkour.run.error.notRunning", "<red>You are not currently running in a course.</red>");
+        m.put("myparkour.run.error.notOpen", "<red>That course is currently not open.</red>");
+        m.put("myparkour.run.error.teleportFailed.start", "<red>Failed to teleport to the start of the course.</red>");
+        m.put("myparkour.run.error.teleportFailed.exit", "<red>Failed to teleport to the exit of the course.</red>");
         m.put("myparkour.exception.invalidCourseFlag", "Invalid course flag: %s");
         return m;
     }

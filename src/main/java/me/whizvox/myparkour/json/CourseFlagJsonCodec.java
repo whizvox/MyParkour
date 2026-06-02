@@ -11,7 +11,8 @@ public class CourseFlagJsonCodec implements JsonSerializer<CourseFlag>, JsonDese
 
     @Override
     public CourseFlag deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        return CourseFlag.valueOf(json.getAsString());
+        String flagName = json.getAsString();
+        return CourseFlag.parse(flagName).orElseThrow(() -> new JsonParseException("Invalid course flag name: " + flagName));
     }
 
     @Override

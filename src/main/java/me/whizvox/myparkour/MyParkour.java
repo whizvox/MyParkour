@@ -6,10 +6,7 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import me.whizvox.myparkour.core.command.EditCourseCommand;
 import me.whizvox.myparkour.core.command.MyParkourCommand;
 import me.whizvox.myparkour.core.command.ParkourCommand;
-import me.whizvox.myparkour.course.Checkpoint;
-import me.whizvox.myparkour.course.Course;
-import me.whizvox.myparkour.course.CourseFlag;
-import me.whizvox.myparkour.course.Courses;
+import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.course.edit.CourseEdits;
 import me.whizvox.myparkour.course.leaderboard.CourseTime;
 import me.whizvox.myparkour.course.leaderboard.LeaderboardTimes;
@@ -47,7 +44,10 @@ public final class MyParkour extends JavaPlugin {
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .registerTypeAdapter(BlockLocation.class, BlockLocationJsonCodec.INSTANCE)
-            .registerTypeAdapter(Checkpoint.class, CheckpointJsonCodec.INSTANCE)
+            .registerTypeAdapter(Checkpoint.class, CheckpointJsonCodecs.GENERIC)
+            .registerTypeAdapter(BlockCheckpoint.class, CheckpointJsonCodecs.BLOCK)
+            .registerTypeAdapter(BoxCheckpoint.class, CheckpointJsonCodecs.BOX)
+            .registerTypeAdapter(SplitCheckpoint.class, CheckpointJsonCodecs.SPLIT)
             .registerTypeAdapter(CourseFlag.class, CourseFlagJsonCodec.INSTANCE)
             .registerTypeAdapter(Course.class, CourseJsonCodec.INSTANCE)
             .registerTypeAdapter(CourseTime.class, CourseTimeJsonCodec.INSTANCE)

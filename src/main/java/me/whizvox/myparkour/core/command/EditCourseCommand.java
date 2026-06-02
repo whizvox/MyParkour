@@ -58,7 +58,7 @@ public class EditCourseCommand {
         course.setDisplayName(name);
         var result = MyParkour.inst().getEdits().setEditingCourse(player, course);
         switch (result) {
-            case SUCCESS -> player.sendMessage(Messages.translate("myparkour.edit.create.success"));
+            case SUCCESS -> player.sendMessage(Messages.translate("myparkour.edit.create.success", Map.of("course", name)));
             case PLAYER_EDITING -> player.sendMessage(Messages.translate("myparkour.edit.warning.alreadyEditing", Map.of("course",
                 MyParkour.inst().getEdits().getEditing(player)
                     .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "(unnamed)"))

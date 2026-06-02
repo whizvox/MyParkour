@@ -10,6 +10,10 @@ public class CommandUtils {
         return new Permission("myparkour." + name);
     }
 
+    public static boolean isPlayer(CommandSourceStack source) {
+        return source.getSender() instanceof Player;
+    }
+
     public static boolean senderHasPermission(CommandSourceStack source, Permission permission) {
         return source.getSender().hasPermission(permission);
     }

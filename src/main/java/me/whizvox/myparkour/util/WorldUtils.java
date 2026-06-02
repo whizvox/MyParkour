@@ -6,10 +6,10 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class WorldUtils {
 
@@ -21,26 +21,19 @@ public class WorldUtils {
         return getWorld(worldId).map(World::getName).orElse("???");
     }
 
-    public static List<Block> getTouchingBlocks(Player player) {
-        List<Block> blocks = new ArrayList<>();
-        BoundingBox box = player.getBoundingBox().expand(0.1, 0.1, 0.1);
+    public static Stream<Block> getBlockStream(World world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return StreamSupport.stream(new BlockSpliterator(world, minX, minY, minZ, maxX, maxY, maxZ), false);
+    }
+
+    public static Stream<Block> getBlocksTouchingPlayer(Player player) {
+        BoundingBox box = player.getBoundingBox();
         int minX = (int) box.getMinX();
         int minY = (int) box.getMinY();
         int minZ = (int) box.getMinZ();
         int maxX = (int) Math.ceil(box.getMaxX());
         int maxY = (int) Math.ceil(box.getMaxY());
         int maxZ = (int) Math.ceil(box.getMaxZ());
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    Block block = player.getWorld().getBlockAt(x, y, z);
-                    if (!block.getType().isAir() && block.getCollisionShape().overlaps(box)) {
-                        blocks.add(block);
-                    }
-                }
-            }
-        }
-        return blocks;
+        return getBlockStream(player.getWorld(), minX, minY, minZ, maxX, maxY, maxZ);
     }
 
 }

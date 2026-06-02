@@ -7,6 +7,7 @@ import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.command.CourseArgumentType;
 import me.whizvox.myparkour.course.Course;
+import me.whizvox.myparkour.course.run.CourseRun;
 import me.whizvox.myparkour.util.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -33,15 +34,24 @@ public class ParkourCommand {
                         MyParkour.inst().getRuns().startRun(player, course);
                         player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))), 2, 20, 10));
                     } else {
-                        player.sendMessage(Messages.translate("myparkour.error.run.teleportFailed.start"));
+                        player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.start"));
                     }
                 });
             } else {
-                player.sendMessage(Messages.translate("myparkour.error.run.alreadyRunning"));
+                player.sendMessage(Messages.translate("myparkour.run.error.alreadyRunning"));
             }
         } else {
-            player.sendMessage(Messages.translate("myparkour.error.run.notOpen"));
+            player.sendMessage(Messages.translate("myparkour.run.error.notOpen"));
         }
+        return SINGLE_SUCCESS;
+    }
+
+    private static int restart(CommandContext<CommandSourceStack> context) {
+        Player player = (Player) context.getSource().getSender();
+        MyParkour.inst().getRuns().getRun(player).ifPresentOrElse(
+            CourseRun::restart,
+            () -> player.sendMessage(Messages.translate("myparkour.run.error.notRunning"))
+        );
         return SINGLE_SUCCESS;
     }
 
@@ -52,11 +62,11 @@ public class ParkourCommand {
                 if (success) {
                     player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", MiniMessage.miniMessage().deserialize(run.getCourse().displayName()))));
                 } else {
-                    player.sendMessage(Messages.translate("myparkour.error.run.teleportFailed.exit"));
+                    player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
                 }
             });
         }, () -> {
-            player.sendMessage(Messages.translate("myparkour.error.run.notRunning"));
+            player.sendMessage(Messages.translate("myparkour.run.error.notRunning"));
         });
         return SINGLE_SUCCESS;
     }
@@ -68,6 +78,10 @@ public class ParkourCommand {
                     .then(Commands.argument("course", CourseArgumentType.course())
                         .executes(ParkourCommand::run)
                     )
+                )
+                .then(Commands.literal("restart")
+                    .requires(source -> CommandUtils.playerHasPermission(source, PERMISSION_RUN))
+                    .executes(ParkourCommand::restart)
                 )
                 .then(Commands.literal("exit")
                     .requires(source -> CommandUtils.playerHasPermission(source, PERMISSION_RUN))
