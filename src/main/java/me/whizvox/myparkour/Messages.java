@@ -1,7 +1,6 @@
 package me.whizvox.myparkour;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.whizvox.myparkour.core.command.EditCourseCommand;
 import me.whizvox.myparkour.core.command.MyParkourCommand;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
@@ -96,6 +95,9 @@ public class Messages {
         m.put("myparkour.run.error.notOpen", "<red>That course is currently not open.</red>");
         m.put("myparkour.run.error.teleportFailed.start", "<red>Failed to teleport to the start of the course.</red>");
         m.put("myparkour.run.error.teleportFailed.exit", "<red>Failed to teleport to the exit of the course.</red>");
+        m.put("myparkour.times.course.none", "<aqua>There are no times set for <course>.</aqua>");
+        m.put("myparkour.times.course.header", "<aqua>Times for <course>:</aqua>");
+        m.put("myparkour.times.course.entry", "<gray>-</gray> <red><time></red> by <yellow><player></yellow>");
         m.put("myparkour.exception.invalidCourseFlag", "Invalid course flag: %s");
         return m;
     }

@@ -1,109 +1,110 @@
 package me.whizvox.myparkour.course.leaderboard;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.whizvox.myparkour.util.Persistent;
+import me.whizvox.myparkour.MyParkour;
+import me.whizvox.myparkour.db.tables.records.TimesRecord;
+import me.whizvox.myparkour.util.Page;
+import org.jooq.*;
+import org.jooq.Record;
 
-import java.lang.reflect.Type;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-public class Leaderboards implements Persistent<LeaderboardTimes> {
+import static me.whizvox.myparkour.db.Tables.TIMES;
 
-    private final Int2ObjectMap<MutableCourseTime> times;
-    private final Map<PlayerCourseKey, MutableCourseTime> byPlayerAndCourse;
-    private final Map<UUID, List<MutableCourseTime>> byPlayer;
-    private final Int2ObjectMap<List<MutableCourseTime>> byCourse;
+public class Leaderboards {
+
     private int lastId;
 
     public Leaderboards() {
-        times = new Int2ObjectOpenHashMap<>();
-        byPlayerAndCourse = new Object2ObjectOpenHashMap<>();
-        byPlayer = new Object2ObjectOpenHashMap<>();
-        byCourse = new Int2ObjectOpenHashMap<>();
         lastId = 0;
     }
 
-    private static void resortCourseTimes(List<MutableCourseTime> courseTimes) {
-        courseTimes.sort(CourseTime.COMPARATOR);
-        for (int i = 0; i < courseTimes.size(); i++) {
-            MutableCourseTime courseTime = courseTimes.get(i);
-            if (courseTime.rank() != i) {
-                courseTime.setRank(i);
-            }
-        }
+    private static SelectJoinStep<Record> select() {
+        return MyParkour.inst().dsl().select().from(TIMES);
     }
 
-    private void resortCourseTimes(int courseId) {
-        List<MutableCourseTime> courseTimes = byCourse.get(courseId);
-        if (courseTimes != null) {
-            resortCourseTimes(courseTimes);
+    private static CourseTime mapRecord(Record record) {
+        return new ImmutableCourseTime(
+            record.get(TIMES.ID),
+            UUID.fromString(record.get(TIMES.PLAYER)),
+            record.get(TIMES.COURSE),
+            record.get(TIMES.WHEN_SET),
+            record.get(TIMES.TIME),
+            record.get(TIMES.RANK)
+        );
+    }
+
+    private void updateLastId() {
+        try (var stream = MyParkour.inst().dsl().select(TIMES.ID).from(TIMES).orderBy(TIMES.ID).limit(1).stream()) {
+            lastId = stream.map(Record1::value1).findAny().orElse(0);
         }
     }
 
     public Optional<CourseTime> getTime(int id) {
-        return Optional.ofNullable(times.get(id));
+        return select()
+            .where(TIMES.ID.eq(id))
+            .fetch(Leaderboards::mapRecord)
+            .stream()
+            .findAny();
     }
 
     public Optional<CourseTime> getTime(UUID playerId, int courseId) {
-        return Optional.ofNullable(byPlayerAndCourse.get(new PlayerCourseKey(playerId, courseId)));
+        return select()
+            .where(TIMES.PLAYER.eq(playerId.toString()).and(TIMES.COURSE.eq(courseId)))
+            .fetch(Leaderboards::mapRecord)
+            .stream()
+            .findAny();
     }
 
-    public Stream<CourseTime> getTimes(LeaderboardQuery query) {
-        Stream<MutableCourseTime> stream;
+    public Page<CourseTime> getTimes(LeaderboardQuery query) {
+        Condition[] conditions;
         if (query.getPlayerId() != null) {
             if (query.isCourseSet()) {
-                return Stream.of(byPlayerAndCourse.get(new PlayerCourseKey(query.getPlayerId(), query.getCourseId())).toImmutable());
+                conditions = new Condition[]{TIMES.PLAYER.eq(query.getPlayerId().toString()).and(TIMES.COURSE.eq(query.getCourseId()))};
             } else {
-                stream = byPlayer.get(query.getPlayerId()).stream();
+                conditions = new Condition[]{TIMES.PLAYER.eq(query.getPlayerId().toString())};
             }
         } else if (query.isCourseSet()) {
-            stream = byCourse.get(query.getCourseId()).stream();
+            conditions = new Condition[]{TIMES.COURSE.eq(query.getCourseId())};
         } else {
-            stream = times.values().stream();
+            conditions = new Condition[0];
         }
-        if (query.isAscending()) {
-            stream = switch (query.getSort()) {
-                case RANK -> stream.sorted(Comparator.comparing(MutableCourseTime::rank));
-                case TIME -> stream.sorted(Comparator.comparing(MutableCourseTime::time));
-                case COURSE -> stream.sorted(Comparator.comparing(MutableCourseTime::courseId));
-            };
-        } else {
-            stream = switch (query.getSort()) {
-                case RANK -> stream.sorted((o1, o2) -> Integer.compare(o2.rank(), o1.rank()));
-                case TIME -> stream.sorted((o1, o2) -> Integer.compare(o2.time(), o1.time()));
-                case COURSE -> stream.sorted((o1, o2) -> Integer.compare(o2.courseId(), o1.courseId()));
-            };
-        }
-        return stream
-            .skip((long) query.getPage() * query.getLimit())
+        int count = MyParkour.inst().dsl().selectCount().from(TIMES).where(conditions).fetch().getFirst().value1();
+        SortOrder order = query.isAscending() ? SortOrder.ASC : SortOrder.DESC;
+        OrderField<?> orderBy = switch (query.getSort()) {
+            case RANK -> TIMES.RANK.sort(order);
+            case TIME -> TIMES.TIME.sort(order);
+            case COURSE -> TIMES.COURSE.sort(order);
+        };
+        List<CourseTime> items = select()
+            .where(conditions)
+            .orderBy(orderBy)
+            .offset(query.getPage() * query.getLimit())
             .limit(query.getLimit())
-            .map(MutableCourseTime::toImmutable);
+            .fetch(Leaderboards::mapRecord);
+        return new Page<>(query.getPage(), count, (int) Math.ceil((double) count / query.getLimit()), items);
     }
 
     public AddResult log(UUID playerId, int courseId, int time) {
-        MutableCourseTime oldTime = byPlayerAndCourse.get(new PlayerCourseKey(playerId, courseId));
-        if (oldTime != null) {
+        return getTime(playerId, courseId).map(oldTime -> {
             if (oldTime.time() <= time) {
                 return AddResult.NO_CHANGE;
             }
-            oldTime.setWhen(LocalDateTime.now());
-            oldTime.setTime(time);
-            resortCourseTimes(courseId);
+            MyParkour.inst().dsl().update(TIMES)
+                    .set(TIMES.WHEN_SET, LocalDateTime.now())
+                    .set(TIMES.TIME, time)
+                    .execute();
             return AddResult.NEW_PERSONAL_BEST;
-        }
-        while (times.containsKey(lastId)) {
+        }).orElseGet(() -> {
+            updateLastId();
             lastId++;
-        }
-        MutableCourseTime newTime = new MutableCourseTime(lastId, playerId, courseId, LocalDateTime.now(), time, 0);
-        times.put(newTime.id(), newTime);
-        byPlayerAndCourse.put(new PlayerCourseKey(playerId, courseId), newTime);
-        byPlayer.computeIfAbsent(playerId, _ -> new ArrayList<>()).add(newTime);
-        byCourse.computeIfAbsent(courseId, _ -> new ArrayList<>()).add(newTime);
-        resortCourseTimes(courseId);
-        return AddResult.FIRST_TIME;
+            MyParkour.inst().dsl().insertInto(TIMES)
+                .set(new TimesRecord(lastId, playerId.toString(), courseId, LocalDateTime.now(), time, (short) 0))
+                .execute();
+            return AddResult.FIRST_TIME;
+        });
     }
 
     public boolean remove(int timeId) {
@@ -146,31 +147,26 @@ public class Leaderboards implements Persistent<LeaderboardTimes> {
         return false;
     }
 
-    @Override
-    public LeaderboardTimes writePersistent() {
-        return new LeaderboardTimes(new ArrayList<>(times.values()));
-    }
-
-    @Override
-    public void readPersistent(LeaderboardTimes allTimes) {
-        times.clear();
-        byPlayerAndCourse.clear();
-        byPlayer.clear();
-        byCourse.clear();
-        allTimes.times().forEach(time -> {
-            MutableCourseTime mutTime = time.toMutable();
-            times.put(time.id(), mutTime);
-            byPlayerAndCourse.put(new PlayerCourseKey(time.playerId(), time.courseId()), mutTime);
-            byPlayer.computeIfAbsent(time.playerId(), _ -> new ArrayList<>()).add(mutTime);
-            byCourse.computeIfAbsent(time.courseId(), _ -> new ArrayList<>()).add(mutTime);
-        });
-        byCourse.values().forEach(Leaderboards::resortCourseTimes);
-    }
-
-    @Override
-    public Type getPersistentType() {
-        return LeaderboardTimes.class;
-    }
+//    @Override
+//    public LeaderboardTimes writePersistent() {
+//        return new LeaderboardTimes(new ArrayList<>(times.values()));
+//    }
+//
+//    @Override
+//    public void readPersistent(LeaderboardTimes allTimes) {
+//        times.clear();
+//        byPlayerAndCourse.clear();
+//        byPlayer.clear();
+//        byCourse.clear();
+//        allTimes.times().forEach(time -> {
+//            MutableCourseTime mutTime = time.toMutable();
+//            times.put(time.id(), mutTime);
+//            byPlayerAndCourse.put(new PlayerCourseKey(time.playerId(), time.courseId()), mutTime);
+//            byPlayer.computeIfAbsent(time.playerId(), _ -> new ArrayList<>()).add(mutTime);
+//            byCourse.computeIfAbsent(time.courseId(), _ -> new ArrayList<>()).add(mutTime);
+//        });
+//        byCourse.values().forEach(Leaderboards::resortCourseTimes);
+//    }
 
     public enum AddResult {
         FIRST_TIME,

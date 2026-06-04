@@ -19,23 +19,35 @@ import me.whizvox.myparkour.util.ImmutableLocation;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 
+@NotNullByDefault
 public final class MyParkour extends JavaPlugin {
 
     private final Gson gson;
-    private MyParkourPaths paths;
     private final SimpleTranslationStore translationStore;
     private final Courses courses;
     private final CourseEdits edits;
     private final CourseRuns runs;
     private final Leaderboards leaderboards;
 
+    private @Nullable MyParkourPaths paths;
+    private @Nullable Connection conn;
+    private @Nullable DSLContext create;
     private int updateRunsTaskId;
 
     public MyParkour() {
@@ -57,13 +69,19 @@ public final class MyParkour extends JavaPlugin {
             .registerTypeAdapter(LocalDateTime.class, LocalDateTimeJsonCodec.INSTANCE)
             .registerTypeAdapter(UUID.class, UUIDJsonCodec.INSTANCE)
             .create();
-        paths = null;
         translationStore = new SimpleTranslationStore();
         courses = new Courses();
         edits = new CourseEdits(courses);
         runs = new CourseRuns();
         leaderboards = new Leaderboards();
+        paths = null;
+        conn = null;
+        create = null;
         updateRunsTaskId = -1;
+    }
+
+    public DSLContext dsl() {
+        return Objects.requireNonNull(create, "Attempted to retrieve DSL context while in an incomplete state");
     }
 
     public Gson getGson() {
@@ -71,7 +89,7 @@ public final class MyParkour extends JavaPlugin {
     }
 
     public MyParkourPaths getPaths() {
-        return paths;
+        return Objects.requireNonNull(paths, "Attempted to retrieve paths object while in an incomplete state");
     }
 
     public SimpleTranslationStore getTranslations() {
@@ -97,6 +115,7 @@ public final class MyParkour extends JavaPlugin {
     public void reload() {
         try {
             Files.createDirectories(getDataPath());
+            //noinspection DataFlowIssue
             translationStore.load(paths.messagesFile());
             courses.load(paths.coursesFile());
             edits.save(paths.editsFile());
@@ -110,6 +129,13 @@ public final class MyParkour extends JavaPlugin {
     @Override
     public void onEnable() {
         paths = new MyParkourPaths(getDataPath());
+        try {
+            conn = DriverManager.getConnection("jdbc:sqlite:" + paths.dbFile().toAbsolutePath());
+            create = DSL.using(conn, SQLDialect.SQLITE);
+        } catch (SQLException e) {
+            getLogger().severe("Could not connect to database");
+            throw new RuntimeException(e);
+        }
         GlobalTranslator.translator().addSource(translationStore);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
             MyParkourCommand.register(commands.registrar());
@@ -123,7 +149,18 @@ public final class MyParkour extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (conn != null) {
+            try {
+                conn.close();
+                getLogger().info("Closed database connection");
+                conn = null;
+                create = null;
+            } catch (SQLException e) {
+                getLogger().log(Level.SEVERE, "Could not close database connection", e);
+            }
+        }
         try {
+            //noinspection DataFlowIssue
             edits.save(paths.editsFile());
             leaderboards.save(paths.timesFile());
             courses.save(paths.coursesFile());
@@ -135,9 +172,10 @@ public final class MyParkour extends JavaPlugin {
         getLogger().info("Cancelled runs updater task");
     }
 
-    private static MyParkour instance = null;
+    private static @Nullable MyParkour instance = null;
 
     public static MyParkour inst() {
+        //noinspection DataFlowIssue
         return instance;
     }
 
