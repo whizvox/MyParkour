@@ -6,7 +6,11 @@ import me.whizvox.myparkour.course.Checkpoint;
 import me.whizvox.myparkour.course.SplitCheckpoint;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
+
+import java.util.UUID;
 
 public class MiniMessageUtils {
 
@@ -80,4 +84,11 @@ public class MiniMessageUtils {
         };
     }
 
+    public static Component getPlayerName(UUID playerId) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null) {
+            return player.name();
+        }
+        return Component.text("???", NamedTextColor.RED);
+    }
 }

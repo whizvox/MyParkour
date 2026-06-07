@@ -3,6 +3,8 @@ package me.whizvox.myparkour.course.leaderboard;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.db.tables.records.TimesRecord;
 import me.whizvox.myparkour.util.Page;
+import me.whizvox.myparkour.util.StringUtils;
+import org.bukkit.Bukkit;
 import org.jooq.*;
 import org.jooq.Record;
 
@@ -40,6 +42,13 @@ public class Leaderboards {
         try (var stream = MyParkour.inst().dsl().select(TIMES.ID).from(TIMES).orderBy(TIMES.ID).limit(1).stream()) {
             lastId = stream.map(Record1::value1).findAny().orElse(0);
         }
+    }
+
+    public void initialize() {
+        MyParkour.inst().dsl()
+            .createTableIfNotExists(TIMES)
+            .columns(TIMES.fields())
+            .execute();
     }
 
     public Optional<CourseTime> getTime(int id) {
@@ -93,9 +102,11 @@ public class Leaderboards {
                 return AddResult.NO_CHANGE;
             }
             MyParkour.inst().dsl().update(TIMES)
-                    .set(TIMES.WHEN_SET, LocalDateTime.now())
-                    .set(TIMES.TIME, time)
-                    .execute();
+                .set(TIMES.WHEN_SET, LocalDateTime.now())
+                .set(TIMES.TIME, time)
+                .execute();
+            //MyParkour.inst().getLogger().info("Updated course time for %s (%s) on %s: %s".formatted(Bukkit.getPlayer(playerId).getName(), playerId, ));
+            MyParkour.inst().getLogger().info("Updated course time: player=%s, course=%d, time=%d".formatted(playerId, courseId, time));
             return AddResult.NEW_PERSONAL_BEST;
         }).orElseGet(() -> {
             updateLastId();
@@ -103,70 +114,33 @@ public class Leaderboards {
             MyParkour.inst().dsl().insertInto(TIMES)
                 .set(new TimesRecord(lastId, playerId.toString(), courseId, LocalDateTime.now(), time, (short) 0))
                 .execute();
+            MyParkour.inst().getLogger().info("Logged first course time: player=%s, course=%d, time=%d".formatted(playerId, courseId, time));
             return AddResult.FIRST_TIME;
         });
     }
 
     public boolean remove(int timeId) {
-        MutableCourseTime time = times.remove(timeId);
-        if (time != null) {
-            byPlayerAndCourse.remove(new PlayerCourseKey(time.playerId(), time.courseId()));
-            byPlayer.get(time.playerId()).removeIf(t -> t.id() == timeId);
-            byCourse.get(time.courseId()).removeIf(t -> t.id() == timeId);
-            resortCourseTimes(time.courseId());
-            return true;
-        }
-        return false;
+        return MyParkour.inst().dsl().deleteFrom(TIMES)
+            .where(TIMES.ID.eq(timeId))
+            .execute() > 0;
     }
 
     public boolean clearCourse(int courseId) {
-        List<MutableCourseTime> courseTimes = byCourse.remove(courseId);
-        if (courseTimes != null) {
-            courseTimes.forEach(time -> {
-                times.remove(time.id());
-                byPlayer.get(time.playerId()).removeIf(t -> t.courseId() == courseId);
-            });
-            List<PlayerCourseKey> toRemove = byPlayerAndCourse.keySet().stream().filter(key -> key.courseId == courseId).toList();
-            toRemove.forEach(byPlayerAndCourse::remove);
-            return true;
-        }
-        return false;
+        return MyParkour.inst().dsl().deleteFrom(TIMES)
+            .where(TIMES.COURSE.eq(courseId))
+            .execute() > 0;
     }
 
     public boolean clearPlayer(UUID playerId) {
-        List<MutableCourseTime> courseTimes = byPlayer.remove(playerId);
-        if (courseTimes != null) {
-            courseTimes.forEach(time -> {
-                times.remove(time.id());
-                byCourse.get(time.courseId()).removeIf(t -> t.playerId().equals(playerId));
-            });
-            List<PlayerCourseKey> toRemove = byPlayerAndCourse.keySet().stream().filter(key -> key.playerId.equals(playerId)).toList();
-            toRemove.forEach(byPlayerAndCourse::remove);
-            return true;
-        }
-        return false;
+        return MyParkour.inst().dsl().deleteFrom(TIMES)
+            .where(TIMES.PLAYER.eq(playerId.toString()))
+            .execute() > 0;
     }
 
-//    @Override
-//    public LeaderboardTimes writePersistent() {
-//        return new LeaderboardTimes(new ArrayList<>(times.values()));
-//    }
-//
-//    @Override
-//    public void readPersistent(LeaderboardTimes allTimes) {
-//        times.clear();
-//        byPlayerAndCourse.clear();
-//        byPlayer.clear();
-//        byCourse.clear();
-//        allTimes.times().forEach(time -> {
-//            MutableCourseTime mutTime = time.toMutable();
-//            times.put(time.id(), mutTime);
-//            byPlayerAndCourse.put(new PlayerCourseKey(time.playerId(), time.courseId()), mutTime);
-//            byPlayer.computeIfAbsent(time.playerId(), _ -> new ArrayList<>()).add(mutTime);
-//            byCourse.computeIfAbsent(time.courseId(), _ -> new ArrayList<>()).add(mutTime);
-//        });
-//        byCourse.values().forEach(Leaderboards::resortCourseTimes);
-//    }
+    public boolean clearAll() {
+        return MyParkour.inst().dsl().deleteFrom(TIMES)
+            .execute() > 0;
+    }
 
     public enum AddResult {
         FIRST_TIME,

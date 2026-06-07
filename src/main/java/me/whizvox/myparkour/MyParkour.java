@@ -6,6 +6,7 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import me.whizvox.myparkour.core.command.EditCourseCommand;
 import me.whizvox.myparkour.core.command.MyParkourCommand;
 import me.whizvox.myparkour.core.command.ParkourCommand;
+import me.whizvox.myparkour.core.command.TimesCommand;
 import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.course.edit.CourseEdits;
 import me.whizvox.myparkour.course.leaderboard.CourseTime;
@@ -119,7 +120,6 @@ public final class MyParkour extends JavaPlugin {
             translationStore.load(paths.messagesFile());
             courses.load(paths.coursesFile());
             edits.save(paths.editsFile());
-            leaderboards.load(paths.timesFile());
             getLogger().info("Finished reloading messages, courses, edits, and leaderboards");
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not complete plugin reload. This plugin will most likely behave abnormally!", e);
@@ -129,6 +129,7 @@ public final class MyParkour extends JavaPlugin {
     @Override
     public void onEnable() {
         paths = new MyParkourPaths(getDataPath());
+        paths.mkdir();
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:" + paths.dbFile().toAbsolutePath());
             create = DSL.using(conn, SQLDialect.SQLITE);
@@ -136,11 +137,13 @@ public final class MyParkour extends JavaPlugin {
             getLogger().severe("Could not connect to database");
             throw new RuntimeException(e);
         }
+        leaderboards.initialize();
         GlobalTranslator.translator().addSource(translationStore);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
             MyParkourCommand.register(commands.registrar());
             EditCourseCommand.register(commands.registrar());
             ParkourCommand.register(commands.registrar());
+            TimesCommand.register(commands.registrar());
         });
         reload();
         updateRunsTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, runs::update, 0, 1);
@@ -162,7 +165,6 @@ public final class MyParkour extends JavaPlugin {
         try {
             //noinspection DataFlowIssue
             edits.save(paths.editsFile());
-            leaderboards.save(paths.timesFile());
             courses.save(paths.coursesFile());
             getLogger().info("Finished saving edits, leaderboards, and courses");
         } catch (IOException e) {

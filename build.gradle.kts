@@ -2,6 +2,7 @@ plugins {
     id("java-library")
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("org.jooq.jooq-codegen-gradle") version "3.21.4"
+    id("com.gradleup.shadow") version "9.4.2"
 }
 
 repositories {
@@ -28,6 +29,10 @@ sourceSets {
             srcDir("build/generated-sources/jooq")
         }
     }
+}
+
+tasks.named("build") {
+    dependsOn("shadowJar")
 }
 
 tasks {
