@@ -17,6 +17,7 @@ import me.whizvox.myparkour.json.*;
 import me.whizvox.myparkour.util.BlockLocation;
 import me.whizvox.myparkour.util.ImmutableBoundingBox;
 import me.whizvox.myparkour.util.ImmutableLocation;
+import me.whizvox.myparkour.util.PlayerNameCache;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,11 +46,13 @@ public final class MyParkour extends JavaPlugin {
     private final CourseEdits edits;
     private final CourseRuns runs;
     private final Leaderboards leaderboards;
+    private final PlayerNameCache names;
 
     private @Nullable MyParkourPaths paths;
     private @Nullable Connection conn;
     private @Nullable DSLContext create;
     private int updateRunsTaskId;
+    private boolean enabledSuccessfully;
 
     public MyParkour() {
         instance = this;
@@ -75,10 +78,12 @@ public final class MyParkour extends JavaPlugin {
         edits = new CourseEdits(courses);
         runs = new CourseRuns();
         leaderboards = new Leaderboards();
+        names = new PlayerNameCache();
         paths = null;
         conn = null;
         create = null;
         updateRunsTaskId = -1;
+        enabledSuccessfully = false;
     }
 
     public DSLContext dsl() {
@@ -113,6 +118,10 @@ public final class MyParkour extends JavaPlugin {
         return leaderboards;
     }
 
+    public PlayerNameCache getNames() {
+        return names;
+    }
+
     public void reload() {
         try {
             Files.createDirectories(getDataPath());
@@ -120,6 +129,7 @@ public final class MyParkour extends JavaPlugin {
             translationStore.load(paths.messagesFile());
             courses.load(paths.coursesFile());
             edits.save(paths.editsFile());
+            names.reload();
             getLogger().info("Finished reloading messages, courses, edits, and leaderboards");
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not complete plugin reload. This plugin will most likely behave abnormally!", e);
@@ -128,6 +138,7 @@ public final class MyParkour extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        enabledSuccessfully = false;
         paths = new MyParkourPaths(getDataPath());
         paths.mkdir();
         try {
@@ -145,13 +156,26 @@ public final class MyParkour extends JavaPlugin {
             ParkourCommand.register(commands.registrar());
             TimesCommand.register(commands.registrar());
         });
+        names.load();
         reload();
         updateRunsTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, runs::update, 0, 1);
         getLogger().info("Scheduled runs updater task");
+        enabledSuccessfully = true;
     }
 
     @Override
     public void onDisable() {
+        if (enabledSuccessfully) {
+            try {
+                //noinspection DataFlowIssue
+                edits.save(paths.editsFile());
+                courses.save(paths.coursesFile());
+                names.save();
+                getLogger().info("Finished saving edits, leaderboards, and courses");
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "Could not save courses or leaderboards", e);
+            }
+        }
         if (conn != null) {
             try {
                 conn.close();
@@ -161,14 +185,6 @@ public final class MyParkour extends JavaPlugin {
             } catch (SQLException e) {
                 getLogger().log(Level.SEVERE, "Could not close database connection", e);
             }
-        }
-        try {
-            //noinspection DataFlowIssue
-            edits.save(paths.editsFile());
-            courses.save(paths.coursesFile());
-            getLogger().info("Finished saving edits, leaderboards, and courses");
-        } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Could not save courses or leaderboards", e);
         }
         Bukkit.getScheduler().cancelTask(updateRunsTaskId);
         getLogger().info("Cancelled runs updater task");

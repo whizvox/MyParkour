@@ -1,5 +1,6 @@
 package me.whizvox.myparkour.core.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -13,7 +14,6 @@ import me.whizvox.myparkour.course.Course;
 import me.whizvox.myparkour.course.leaderboard.CourseTime;
 import me.whizvox.myparkour.course.leaderboard.LeaderboardQuery;
 import me.whizvox.myparkour.util.CommandUtils;
-import me.whizvox.myparkour.util.MiniMessageUtils;
 import me.whizvox.myparkour.util.Page;
 import me.whizvox.myparkour.util.StringUtils;
 import net.kyori.adventure.text.Component;
@@ -34,14 +34,14 @@ public class TimesCommand {
         PERMISSION_CLEAR_PLAYER = CommandUtils.createPermission("times.clear.player"),
         PERMISSION_CLEAR_ALL = CommandUtils.createPermission("times.clear.all");
 
-    private static int showCourseTimes(CommandContext<CommandSourceStack> context) {
+    private static int showCourseTimes(CommandContext<CommandSourceStack> context, int page) {
         Course course = CourseArgumentType.getCourse(context, "course");
         CommandSender sender = context.getSource().getSender();
-        Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setCourseId(course.id()));
+        Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setCourseId(course.id()).setAscending(true).setPage(page - 1));
         if (!times.items().isEmpty()) {
-            Component comp = Messages.translate("myparkour.times.course.header", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "current_page", times.page(), "total_pages", times.totalPages()));
+            Component comp = Messages.translate("myparkour.times.course.header", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "current_page", times.page() + 1, "total_pages", times.totalPages()));
             for (CourseTime item : times.items()) {
-                comp = comp.appendNewline().append(Messages.translate("myparkour.times.course.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MiniMessageUtils.getPlayerName(item.playerId()))));
+                comp = comp.appendNewline().append(Messages.translate("myparkour.times.course.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MyParkour.inst().getNames().getDisplayName(item.playerId()))));
             }
             sender.sendMessage(comp);
         } else {
@@ -77,7 +77,10 @@ public class TimesCommand {
             .then(Commands.literal("course")
                 .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_COURSE_TIMES))
                 .then(Commands.argument("course", CourseArgumentType.course())
-                    .executes(TimesCommand::showCourseTimes)
+                    .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                        .executes(context -> showCourseTimes(context, IntegerArgumentType.getInteger(context, "page")))
+                    )
+                    .executes(context -> showCourseTimes(context, 1))
                 )
             )
             .then(Commands.literal("clear")

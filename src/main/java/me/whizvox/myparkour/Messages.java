@@ -96,7 +96,7 @@ public class Messages {
         m.put("myparkour.run.error.teleportFailed.start", "<red>Failed to teleport to the start of the course.</red>");
         m.put("myparkour.run.error.teleportFailed.exit", "<red>Failed to teleport to the exit of the course.</red>");
         m.put("myparkour.times.course.none", "<aqua>There are no times set for <course>.</aqua>");
-        m.put("myparkour.times.course.header", "<aqua>Times for <course>:</aqua>");
+        m.put("myparkour.times.course.header", "<aqua>Times for <course> (<yellow><current_page></yellow>/<yellow><total_pages></yellow>):</aqua>");
         m.put("myparkour.times.course.entry", "<gray>-</gray> <red><time></red> by <yellow><player></yellow>");
         m.put("myparkour.times.clear.course", "<gold>Cleared all times for <course>.</gold>");
         m.put("myparkour.times.clear.course.none", "<gold><course> has no times to clear.</gold>");
@@ -104,6 +104,8 @@ public class Messages {
         m.put("myparkour.times.clear.player.none", "<gold><player> has not set any times.</gold>");
         m.put("myparkour.times.clear.all", "<gold>Cleared all course times.</gold>");
         m.put("myparkour.times.clear.all.none", "<gold>There are no times to clear.</gold>");
+        m.put("myparkour.debug.addFakeTimes", "Fake times added to <course>");
+        m.put("myparkour.debug.clear", "Cleared all debug data");
         m.put("myparkour.exception.invalidCourseFlag", "Invalid course flag: %s");
         return m;
     }

@@ -1,10 +1,7 @@
 package me.whizvox.myparkour.course.leaderboard;
 
 import me.whizvox.myparkour.MyParkour;
-import me.whizvox.myparkour.db.tables.records.TimesRecord;
 import me.whizvox.myparkour.util.Page;
-import me.whizvox.myparkour.util.StringUtils;
-import org.bukkit.Bukkit;
 import org.jooq.*;
 import org.jooq.Record;
 
@@ -12,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static me.whizvox.myparkour.db.Tables.TIMES;
 
@@ -39,7 +37,7 @@ public class Leaderboards {
     }
 
     private void updateLastId() {
-        try (var stream = MyParkour.inst().dsl().select(TIMES.ID).from(TIMES).orderBy(TIMES.ID).limit(1).stream()) {
+        try (var stream = MyParkour.inst().dsl().select(TIMES.ID).from(TIMES).orderBy(TIMES.ID.desc()).limit(1).stream()) {
             lastId = stream.map(Record1::value1).findAny().orElse(0);
         }
     }
@@ -48,6 +46,7 @@ public class Leaderboards {
         MyParkour.inst().dsl()
             .createTableIfNotExists(TIMES)
             .columns(TIMES.fields())
+            .primaryKey(TIMES.ID)
             .execute();
     }
 
@@ -65,6 +64,12 @@ public class Leaderboards {
             .fetch(Leaderboards::mapRecord)
             .stream()
             .findAny();
+    }
+
+    public Stream<CourseTime> getAllTimes() {
+        return select()
+            .stream()
+            .map(Leaderboards::mapRecord);
     }
 
     public Page<CourseTime> getTimes(LeaderboardQuery query) {
@@ -105,14 +110,13 @@ public class Leaderboards {
                 .set(TIMES.WHEN_SET, LocalDateTime.now())
                 .set(TIMES.TIME, time)
                 .execute();
-            //MyParkour.inst().getLogger().info("Updated course time for %s (%s) on %s: %s".formatted(Bukkit.getPlayer(playerId).getName(), playerId, ));
             MyParkour.inst().getLogger().info("Updated course time: player=%s, course=%d, time=%d".formatted(playerId, courseId, time));
             return AddResult.NEW_PERSONAL_BEST;
         }).orElseGet(() -> {
             updateLastId();
             lastId++;
-            MyParkour.inst().dsl().insertInto(TIMES)
-                .set(new TimesRecord(lastId, playerId.toString(), courseId, LocalDateTime.now(), time, (short) 0))
+            MyParkour.inst().dsl().insertInto(TIMES, TIMES.ID, TIMES.PLAYER, TIMES.COURSE, TIMES.WHEN_SET, TIMES.TIME, TIMES.RANK)
+                .values(lastId, playerId.toString(), courseId, LocalDateTime.now(), time, (short) 0)
                 .execute();
             MyParkour.inst().getLogger().info("Logged first course time: player=%s, course=%d, time=%d".formatted(playerId, courseId, time));
             return AddResult.FIRST_TIME;
@@ -146,9 +150,6 @@ public class Leaderboards {
         FIRST_TIME,
         NEW_PERSONAL_BEST,
         NO_CHANGE
-    }
-
-    private record PlayerCourseKey(UUID playerId, int courseId) {
     }
 
 }
