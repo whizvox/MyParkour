@@ -3,6 +3,8 @@ package me.whizvox.myparkour.core.command;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.command.CourseArgumentType;
@@ -19,6 +21,7 @@ import java.util.*;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 import static me.whizvox.myparkour.Messages.key;
+import static me.whizvox.myparkour.db.tables.Times.TIMES;
 import static me.whizvox.myparkour.util.CommandUtils.createPermission;
 
 public class MyParkourCommand {
@@ -58,15 +61,24 @@ public class MyParkourCommand {
 
     private static int debugClear(CommandContext<CommandSourceStack> context) {
         List<CourseTime> fakeTimes = new ArrayList<>();
+        IntSet coursesToReorder = new IntArraySet();
         try (var stream = MyParkour.inst().getLeaderboards().getAllTimes()) {
             stream.forEach(courseTime -> {
                 OfflinePlayer player = Bukkit.getOfflinePlayer(courseTime.playerId());
                 if (!player.hasPlayedBefore()) {
                     fakeTimes.add(courseTime);
+                    coursesToReorder.add(courseTime.courseId());
                 }
             });
         }
-        fakeTimes.forEach(courseTime -> MyParkour.inst().getLeaderboards().remove(courseTime.id()));
+        MyParkour.inst().dsl().batched(c ->
+            fakeTimes.forEach(time ->
+                c.dsl().deleteFrom(TIMES)
+                    .where(TIMES.ID.eq(time.id()))
+                    .execute()
+            )
+        );
+        coursesToReorder.forEach(courseId -> MyParkour.inst().getLeaderboards().reorderCourseRanks(courseId));
         context.getSource().getSender().sendMessage(Messages.translate("myparkour.debug.clear"));
         return SINGLE_SUCCESS;
     }

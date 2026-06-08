@@ -1,5 +1,8 @@
 package me.whizvox.myparkour.course.leaderboard;
 
+import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.util.Page;
 import org.jooq.*;
@@ -39,6 +42,32 @@ public class Leaderboards {
     private void updateLastId() {
         try (var stream = MyParkour.inst().dsl().select(TIMES.ID).from(TIMES).orderBy(TIMES.ID.desc()).limit(1).stream()) {
             lastId = stream.map(Record1::value1).findAny().orElse(0);
+        }
+    }
+
+    public void reorderCourseRanks(int courseId) {
+        Int2IntArrayMap rankChanges = new Int2IntArrayMap();
+        List<CourseTime> fetch = MyParkour.inst().dsl().select()
+            .from(TIMES)
+            .where(TIMES.COURSE.eq(courseId))
+            .orderBy(TIMES.TIME.asc())
+            .fetch(Leaderboards::mapRecord);
+        for (int i = 0; i < fetch.size(); i++) {
+            CourseTime time = fetch.get(i);
+            if (time.rank() != i + 1) {
+                rankChanges.put(time.id(), i + 1);
+            }
+        }
+        if (!rankChanges.isEmpty()) {
+            MyParkour.inst().dsl().batched(c ->
+                rankChanges.forEach((id, rank) ->
+                    c.dsl().update(TIMES)
+                        .set(TIMES.RANK, (short) rank)
+                        .where(TIMES.ID.eq(id))
+                        .execute()
+                )
+            );
+            MyParkour.inst().getLogger().info("Finished re-ordering time ranks: course=%d".formatted(courseId));
         }
     }
 
@@ -110,6 +139,7 @@ public class Leaderboards {
                 .set(TIMES.WHEN_SET, LocalDateTime.now())
                 .set(TIMES.TIME, time)
                 .execute();
+            reorderCourseRanks(courseId);
             MyParkour.inst().getLogger().info("Updated course time: player=%s, course=%d, time=%d".formatted(playerId, courseId, time));
             return AddResult.NEW_PERSONAL_BEST;
         }).orElseGet(() -> {
@@ -118,32 +148,56 @@ public class Leaderboards {
             MyParkour.inst().dsl().insertInto(TIMES, TIMES.ID, TIMES.PLAYER, TIMES.COURSE, TIMES.WHEN_SET, TIMES.TIME, TIMES.RANK)
                 .values(lastId, playerId.toString(), courseId, LocalDateTime.now(), time, (short) 0)
                 .execute();
+            reorderCourseRanks(courseId);
             MyParkour.inst().getLogger().info("Logged first course time: player=%s, course=%d, time=%d".formatted(playerId, courseId, time));
             return AddResult.FIRST_TIME;
         });
     }
 
-    public boolean remove(int timeId) {
-        return MyParkour.inst().dsl().deleteFrom(TIMES)
-            .where(TIMES.ID.eq(timeId))
-            .execute() > 0;
+    public boolean delete(int timeId) {
+        return getTime(timeId).map(time -> {
+            MyParkour.inst().dsl().deleteFrom(TIMES)
+                .where(TIMES.ID.eq(timeId))
+                .execute();
+            reorderCourseRanks(time.courseId());
+            MyParkour.inst().getLogger().info("Deleted course time: id=%d, course=%d, player=%s, time=%d".formatted(timeId, time.courseId(), time.playerId(), time.time()));
+            return true;
+        }).orElse(false);
     }
 
-    public boolean clearCourse(int courseId) {
-        return MyParkour.inst().dsl().deleteFrom(TIMES)
+    public boolean deleteByCourse(int courseId) {
+        boolean result = MyParkour.inst().dsl().deleteFrom(TIMES)
             .where(TIMES.COURSE.eq(courseId))
             .execute() > 0;
+        if (result) {
+            MyParkour.inst().getLogger().info("Deleted all course times: course=%d".formatted(courseId));
+        }
+        return result;
     }
 
-    public boolean clearPlayer(UUID playerId) {
-        return MyParkour.inst().dsl().deleteFrom(TIMES)
+    public boolean deleteByPlayer(UUID playerId) {
+        IntList coursesToReorder = new IntArrayList();
+        MyParkour.inst().dsl().select(TIMES)
+            .where(TIMES.PLAYER.eq(playerId.toString()))
+            .stream()
+            .forEach(r -> coursesToReorder.add((int) r.get(TIMES.COURSE)));
+        boolean result = MyParkour.inst().dsl().deleteFrom(TIMES)
             .where(TIMES.PLAYER.eq(playerId.toString()))
             .execute() > 0;
+        if (result) {
+            coursesToReorder.forEach(this::reorderCourseRanks);
+            MyParkour.inst().getLogger().info("Deleted all times from player: player=%s".formatted(playerId));
+        }
+        return result;
     }
 
-    public boolean clearAll() {
-        return MyParkour.inst().dsl().deleteFrom(TIMES)
+    public boolean deleteAll() {
+        boolean result = MyParkour.inst().dsl().deleteFrom(TIMES)
             .execute() > 0;
+        if (result) {
+            MyParkour.inst().getLogger().info("Deleted all course times.");
+        }
+        return result;
     }
 
     public enum AddResult {

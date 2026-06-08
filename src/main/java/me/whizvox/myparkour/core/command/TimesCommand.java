@@ -10,6 +10,7 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.command.CourseArgumentType;
+import me.whizvox.myparkour.command.CourseTimeArgumentType;
 import me.whizvox.myparkour.course.Course;
 import me.whizvox.myparkour.course.leaderboard.CourseTime;
 import me.whizvox.myparkour.course.leaderboard.LeaderboardQuery;
@@ -21,27 +22,54 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
+import org.jetbrains.annotations.NotNullByDefault;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 
+@NotNullByDefault
 public class TimesCommand {
 
     public static final Permission
         PERMISSION_COURSE_TIMES = CommandUtils.createPermission("times.course"),
-        PERMISSION_CLEAR_COURSE = CommandUtils.createPermission("times.clear.course"),
-        PERMISSION_CLEAR_PLAYER = CommandUtils.createPermission("times.clear.player"),
-        PERMISSION_CLEAR_ALL = CommandUtils.createPermission("times.clear.all");
+        PERMISSION_TIME_INFO = CommandUtils.createPermission("times.info"),
+        PERMISSION_DELETE_ONE = CommandUtils.createPermission("times.delete.one"),
+        PERMISSION_DELETE_COURSE = CommandUtils.createPermission("times.delete.course"),
+        PERMISSION_DELETE_PLAYER = CommandUtils.createPermission("times.delete.player"),
+        PERMISSION_DELETE_ALL = CommandUtils.createPermission("times.delete.all");
+
+    private static Component getTimeInfo(CourseTime time) {
+        Course course = MyParkour.inst().getCourses().get(time.courseId())
+            .orElseThrow(() -> new RuntimeException("Could not retrieve course from course time: time=%d, course=%d".formatted(time.id(), time.courseId())));
+        return Messages.translate("myparkour.times.info", Map.of(
+            "id", time.id(),
+            "player_name", MyParkour.inst().getNames().getDisplayName(time.playerId()),
+            "player_id", time.playerId(),
+            "course", MiniMessage.miniMessage().deserialize(course.displayName()),
+            "course_name", course.name(),
+            "time", StringUtils.formatTime(time.time()),
+            "time_ticks", time.time(),
+            "when_set", DateTimeFormatter.ISO_DATE_TIME.format(time.when()),
+            "rank", time.rank()
+        ));
+    }
 
     private static int showCourseTimes(CommandContext<CommandSourceStack> context, int page) {
         Course course = CourseArgumentType.getCourse(context, "course");
         CommandSender sender = context.getSource().getSender();
         Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setCourseId(course.id()).setAscending(true).setPage(page - 1));
         if (!times.items().isEmpty()) {
+            boolean canSeeInfo = sender.hasPermission(PERMISSION_TIME_INFO);
             Component comp = Messages.translate("myparkour.times.course.header", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "current_page", times.page() + 1, "total_pages", times.totalPages()));
             for (CourseTime item : times.items()) {
-                comp = comp.appendNewline().append(Messages.translate("myparkour.times.course.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MyParkour.inst().getNames().getDisplayName(item.playerId()))));
+                Component basicInfo = Messages.translate("myparkour.times.course.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MyParkour.inst().getNames().getDisplayName(item.playerId())));
+                if (canSeeInfo) {
+                    comp = comp.appendNewline().append(basicInfo.hoverEvent(getTimeInfo(item)));
+                } else {
+                    comp = comp.appendNewline().append(basicInfo);
+                }
             }
             sender.sendMessage(comp);
         } else {
@@ -50,24 +78,37 @@ public class TimesCommand {
         return SINGLE_SUCCESS;
     }
 
-    private static int clearTimesForCourse(CommandContext<CommandSourceStack> context) {
+    private static int showTimeInfo(CommandContext<CommandSourceStack> context) {
+        CourseTime time = CourseTimeArgumentType.getTime(context, "timeId");
+        context.getSource().getSender().sendMessage(getTimeInfo(time));
+        return SINGLE_SUCCESS;
+    }
+
+    private static int deleteTime(CommandContext<CommandSourceStack> context) {
+        CourseTime time = CourseTimeArgumentType.getTime(context, "timeId");
+        MyParkour.inst().getLeaderboards().delete(time.id());
+        context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.delete.one"));
+        return SINGLE_SUCCESS;
+    }
+
+    private static int deleteTimesForCourse(CommandContext<CommandSourceStack> context) {
         Course course = CourseArgumentType.getCourse(context, "course");
-        boolean success = MyParkour.inst().getLeaderboards().clearCourse(course.id());
+        boolean success = MyParkour.inst().getLeaderboards().deleteByCourse(course.id());
         context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.clear.course" + (success ? "" : ".none"), Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))));
         return SINGLE_SUCCESS;
     }
 
-    private static int clearTimesForPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    private static int deleteTimesForPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         var resolver = context.getArgument("player", PlayerSelectorArgumentResolver.class);
         Player player = resolver.resolve(context.getSource()).getFirst();
         CommandSender sender = context.getSource().getSender();
-        boolean success = MyParkour.inst().getLeaderboards().clearPlayer(player.getUniqueId());
+        boolean success = MyParkour.inst().getLeaderboards().deleteByPlayer(player.getUniqueId());
         sender.sendMessage(Messages.translate("myparkour.times.clear.player" + (success ? "" : ".none"), Map.of("player", player.name())));
         return SINGLE_SUCCESS;
     }
 
-    private static int clearAllCourseTimes(CommandContext<CommandSourceStack> context) {
-        boolean success = MyParkour.inst().getLeaderboards().clearAll();
+    private static int deleteAllCourseTimes(CommandContext<CommandSourceStack> context) {
+        boolean success = MyParkour.inst().getLeaderboards().deleteAll();
         context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.clear.all" + (success ? "" : ".none")));
         return SINGLE_SUCCESS;
     }
@@ -83,22 +124,34 @@ public class TimesCommand {
                     .executes(context -> showCourseTimes(context, 1))
                 )
             )
-            .then(Commands.literal("clear")
+            .then(Commands.literal("info")
+                .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_TIME_INFO))
+                .then(Commands.argument("timeId", CourseTimeArgumentType.time())
+                    .executes(TimesCommand::showTimeInfo)
+                )
+            )
+            .then(Commands.literal("delete")
+                .then(Commands.literal("time")
+                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_DELETE_ONE))
+                    .then(Commands.argument("timeId", CourseTimeArgumentType.time())
+                        .executes(TimesCommand::deleteTime)
+                    )
+                )
                 .then(Commands.literal("course")
-                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_CLEAR_COURSE))
+                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_DELETE_COURSE))
                     .then(Commands.argument("course", CourseArgumentType.course())
-                        .executes(TimesCommand::clearTimesForCourse)
+                        .executes(TimesCommand::deleteTimesForCourse)
                     )
                 )
                 .then(Commands.literal("player")
-                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_CLEAR_PLAYER))
+                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_DELETE_PLAYER))
                     .then(Commands.argument("player", ArgumentTypes.player())
-                        .executes(TimesCommand::clearTimesForPlayer)
+                        .executes(TimesCommand::deleteTimesForPlayer)
                     )
                 )
                 .then(Commands.literal("all")
-                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_CLEAR_ALL))
-                    .executes(TimesCommand::clearAllCourseTimes)
+                    .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_DELETE_ALL))
+                    .executes(TimesCommand::deleteAllCourseTimes)
                 )
             )
             .build()

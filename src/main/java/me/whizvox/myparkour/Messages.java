@@ -97,16 +97,19 @@ public class Messages {
         m.put("myparkour.run.error.teleportFailed.exit", "<red>Failed to teleport to the exit of the course.</red>");
         m.put("myparkour.times.course.none", "<aqua>There are no times set for <course>.</aqua>");
         m.put("myparkour.times.course.header", "<aqua>Times for <course> (<yellow><current_page></yellow>/<yellow><total_pages></yellow>):</aqua>");
-        m.put("myparkour.times.course.entry", "<gray>-</gray> <red><time></red> by <yellow><player></yellow>");
-        m.put("myparkour.times.clear.course", "<gold>Cleared all times for <course>.</gold>");
-        m.put("myparkour.times.clear.course.none", "<gold><course> has no times to clear.</gold>");
-        m.put("myparkour.times.clear.player", "<gold>Cleared all times for <player>.</gold>");
-        m.put("myparkour.times.clear.player.none", "<gold><player> has not set any times.</gold>");
-        m.put("myparkour.times.clear.all", "<gold>Cleared all course times.</gold>");
-        m.put("myparkour.times.clear.all.none", "<gold>There are no times to clear.</gold>");
+        m.put("myparkour.times.course.entry", "<gold>#<rank></gold> <red><time></red> by <yellow><player></yellow>");
+        m.put("myparkour.times.info", "ID: <aqua><id></aqua>\nPlayer: <aqua><player_name></aqua> (<yellow><player_id></yellow>)\nCourse: <aqua><course></aqua> (<yellow><course_name></yellow>)\nTime: <aqua><time></aqua> (<yellow><time_ticks> ticks</yellow>)\nWhen Set: <aqua><when_set></aqua>\nRank: <aqua><rank></aqua>");
+        m.put("myparkour.times.delete.one", "<gold>Time successfully deleted.</gold>");
+        m.put("myparkour.times.delete.course", "<gold>Cleared all times for <course>.</gold>");
+        m.put("myparkour.times.delete.course.none", "<gold><course> has no times to clear.</gold>");
+        m.put("myparkour.times.delete.player", "<gold>Cleared all times for <player>.</gold>");
+        m.put("myparkour.times.delete.player.none", "<gold><player> has not set any times.</gold>");
+        m.put("myparkour.times.delete.all", "<gold>Cleared all course times.</gold>");
+        m.put("myparkour.times.delete.all.none", "<gold>There are no times to clear.</gold>");
         m.put("myparkour.debug.addFakeTimes", "Fake times added to <course>");
         m.put("myparkour.debug.clear", "Cleared all debug data");
         m.put("myparkour.exception.invalidCourseFlag", "Invalid course flag: %s");
+        m.put("myparkour.exception.unknownCourseTime", "Unknown course time: %d");
         return m;
     }
 
