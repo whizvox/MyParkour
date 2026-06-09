@@ -150,6 +150,7 @@ public final class MyParkour extends JavaPlugin {
         }
         leaderboards.initialize();
         GlobalTranslator.translator().addSource(translationStore);
+        getServer().getPluginManager().registerEvents(new MyParkourEventListener(), this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
             MyParkourCommand.register(commands.registrar());
             EditCourseCommand.register(commands.registrar());

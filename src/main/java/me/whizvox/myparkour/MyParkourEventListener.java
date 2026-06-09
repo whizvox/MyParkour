@@ -6,8 +6,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.jetbrains.annotations.NotNullByDefault;
 
-public class MyParkourEventHandler implements Listener {
+@NotNullByDefault
+public class MyParkourEventListener implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
@@ -15,6 +18,7 @@ public class MyParkourEventHandler implements Listener {
         MyParkour.inst().getRuns().getRun(player).ifPresent(run -> {
             event.setCancelled(true);
             player.heal(player.getHealth());
+            player.setFireTicks(0);
             run.teleportToLastCheckpoint();
         });
     }
@@ -28,6 +32,11 @@ public class MyParkourEventHandler implements Listener {
                 }
             });
         }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        MyParkour.inst().getNames().update(event.getPlayer());
     }
 
 }
