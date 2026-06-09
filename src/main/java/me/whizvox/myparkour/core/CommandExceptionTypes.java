@@ -11,6 +11,8 @@ public class CommandExceptionTypes {
         SPLIT_CHECKPOINTS_CANNOT_ADD_SPLIT = new TranslatableCommandExceptionType("exception.splitCheckpoints.cannotAddSplit", 1),
         SPLIT_CHECKPOINTS_NO_DUPLICATES = new TranslatableCommandExceptionType("exception.splitCheckpoints.noDuplicates", 1),
         INVALID_COURSE_FLAG = new TranslatableCommandExceptionType("myparkour.exception.invalidCourseFlag", 1),
+        INVALID_START_GAMEMODE = new TranslatableCommandExceptionType("myparkour.exception.invalidStartGameMode", 2),
+        INVALID_EXIT_GAMEMODE = new TranslatableCommandExceptionType("myparkour.exception.invalidExitGameMode", 2),
         UNKNOWN_COURSE_TIME = new TranslatableCommandExceptionType("myparkour.exception.unknownCourseTime", 1),
         MUST_BE_PLAYER = new TranslatableCommandExceptionType("exception.mustBePlayer"),
         UNKNOWN_COURSE = new TranslatableCommandExceptionType("exception.unknownCourse", 1);

@@ -3,10 +3,7 @@ package me.whizvox.myparkour.course.run;
 import io.papermc.paper.block.fluid.FluidData;
 import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
-import me.whizvox.myparkour.course.Checkpoint;
-import me.whizvox.myparkour.course.Course;
-import me.whizvox.myparkour.course.CourseFlag;
-import me.whizvox.myparkour.course.SplitCheckpoint;
+import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.util.StringUtils;
 import me.whizvox.myparkour.util.WorldUtils;
 import net.kyori.adventure.key.Key;
@@ -16,6 +13,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Fluid;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -28,6 +26,7 @@ public class CourseRun {
 
     private final Player player;
     private final Course course;
+    private final GameMode previousGameMode;
     private int start;
     private int currentCheckpointIndex;
     private int lastSplitCheckpointIndex;
@@ -35,9 +34,10 @@ public class CourseRun {
     private final boolean checkWater;
     private final boolean checkLava;
 
-    public CourseRun(Player player, Course course) {
+    public CourseRun(Player player, Course course, GameMode previousGameMode) {
         this.player = player;
         this.course = course;
+        this.previousGameMode = previousGameMode;
         this.start = Bukkit.getCurrentTick();
         currentCheckpointIndex = 0;
         lastSplitCheckpointIndex = 0;
@@ -72,6 +72,19 @@ public class CourseRun {
             player.sendMessage(message);
             if (!success) {
                 player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+            }
+            ExitGameMode exitGameMode;
+            if (course.exitGameMode() == ExitGameMode.DEFAULT) {
+                exitGameMode = MyParkour.inst().getPluginConfig().getDefaultExitGameMode().orElse(ExitGameMode.NONE);
+            } else {
+                exitGameMode = course.exitGameMode();
+            }
+            switch (exitGameMode) {
+                case SURVIVAL -> player.setGameMode(GameMode.SURVIVAL);
+                case ADVENTURE -> player.setGameMode(GameMode.ADVENTURE);
+                case CREATIVE -> player.setGameMode(GameMode.CREATIVE);
+                case SPECTATOR -> player.setGameMode(GameMode.SPECTATOR);
+                case PREVIOUS -> player.setGameMode(previousGameMode);
             }
         });
     }

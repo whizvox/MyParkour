@@ -2,16 +2,11 @@ package me.whizvox.myparkour.course.edit;
 
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import me.whizvox.myparkour.course.Checkpoint;
-import me.whizvox.myparkour.course.Course;
-import me.whizvox.myparkour.course.CourseFlag;
+import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.util.ImmutableLocation;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class EditableCourse {
 
@@ -22,6 +17,8 @@ public class EditableCourse {
     private @Nullable ImmutableLocation start;
     private final Set<CourseFlag> flags;
     private @Nullable ImmutableLocation exit;
+    private StartGameMode startGameMode;
+    private ExitGameMode exitGameMode;
     private boolean open;
 
     public EditableCourse() {
@@ -32,6 +29,8 @@ public class EditableCourse {
         start = null;
         flags = new ObjectArraySet<>();
         exit = null;
+        startGameMode = StartGameMode.DEFAULT;
+        exitGameMode = ExitGameMode.DEFAULT;
         open = false;
     }
 
@@ -45,6 +44,8 @@ public class EditableCourse {
         flags = new ObjectArraySet<>();
         flags.addAll(orig.flags());
         exit = orig.exit();
+        startGameMode = orig.startGameMode();
+        exitGameMode = orig.exitGameMode();
         open = orig.open();
     }
 
@@ -78,6 +79,14 @@ public class EditableCourse {
 
     public @Nullable ImmutableLocation getExit() {
         return exit;
+    }
+
+    public StartGameMode getStartGameMode() {
+        return startGameMode;
+    }
+
+    public ExitGameMode getExitGameMode() {
+        return exitGameMode;
     }
 
     public boolean isOpen() {
@@ -133,6 +142,14 @@ public class EditableCourse {
         this.exit = exit;
     }
 
+    public void setStartGameMode(StartGameMode startGameMode) {
+        this.startGameMode = startGameMode;
+    }
+
+    public void setExitGameMode(ExitGameMode exitGameMode) {
+        this.exitGameMode = exitGameMode;
+    }
+
     public void setOpen(boolean open) {
         this.open = open;
     }
@@ -163,7 +180,8 @@ public class EditableCourse {
         ValidResult result = checkValid();
         if (result == ValidResult.VALID) {
             //noinspection DataFlowIssue
-            return Pair.of(ValidResult.VALID, new Course(id, name, displayName, start, checkpoints, flags, exit, open));
+            return Pair.of(ValidResult.VALID, new Course(id, name, displayName, start, checkpoints, flags, exit,
+                startGameMode, exitGameMode, open));
         }
         return Pair.of(result, null);
     }

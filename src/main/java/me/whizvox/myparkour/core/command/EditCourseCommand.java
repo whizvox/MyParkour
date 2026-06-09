@@ -14,10 +14,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
-import me.whizvox.myparkour.command.CommandConsumer;
-import me.whizvox.myparkour.command.CourseArgumentType;
-import me.whizvox.myparkour.command.CourseFlagArgumentType;
-import me.whizvox.myparkour.command.IntegersArgumentType;
+import me.whizvox.myparkour.command.*;
 import me.whizvox.myparkour.core.CommandExceptionTypes;
 import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.course.edit.EditableCourse;
@@ -206,6 +203,18 @@ public class EditCourseCommand {
     private static int setDisplayName(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String displayName = StringArgumentType.getString(context, "displayname");
         setProperty(context, displayName, EditableCourse::setDisplayName, (sender, s) -> sender.sendMessage(Messages.translate("myparkour.edit.set.displayName", Map.of("displayname", MiniMessage.miniMessage().deserialize(s)))));
+        return SINGLE_SUCCESS;
+    }
+
+    private static int setStartGameMode(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        StartGameMode gamemode = StartGameModeArgumentType.getStartGameMode(context, "gamemode");
+        setProperty(context, gamemode, EditableCourse::setStartGameMode, (sender, gm) -> sender.sendMessage(Messages.translate("myparkour.edit.set.startGameMode", Map.of("gamemode", gm.repr))));
+        return SINGLE_SUCCESS;
+    }
+
+    private static int setExitGameMode(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ExitGameMode gamemode = ExitGameModeArgumentType.getExitGameMode(context, "gamemode");
+        setProperty(context, gamemode, EditableCourse::setExitGameMode, (sender, gm) -> sender.sendMessage(Messages.translate("myparkour.edit.set.startExitMode", Map.of("gamemode", gm.repr))));
         return SINGLE_SUCCESS;
     }
 
@@ -407,6 +416,16 @@ public class EditCourseCommand {
                         ))
                     )
                     .executes(context -> setExit(context, ((Player) context.getSource().getSender()).getLocation()))
+                )
+                .then(Commands.literal("startgamemode")
+                    .then(Commands.argument("gamemode", StartGameModeArgumentType.startGameMode())
+                        .executes(EditCourseCommand::setStartGameMode)
+                    )
+                )
+                .then(Commands.literal("exitgamemode")
+                    .then(Commands.argument("gamemode", ExitGameModeArgumentType.exitGameMode())
+                        .executes(EditCourseCommand::setExitGameMode)
+                    )
                 )
             )
             .then(Commands.literal("checkpoint")

@@ -3,6 +3,7 @@ package me.whizvox.myparkour;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import me.whizvox.myparkour.core.MyParkourPluginConfiguration;
 import me.whizvox.myparkour.core.command.EditCourseCommand;
 import me.whizvox.myparkour.core.command.MyParkourCommand;
 import me.whizvox.myparkour.core.command.ParkourCommand;
@@ -27,6 +28,7 @@ import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
@@ -47,6 +49,7 @@ public final class MyParkour extends JavaPlugin {
     private final CourseRuns runs;
     private final Leaderboards leaderboards;
     private final PlayerNameCache names;
+    private final MyParkourPluginConfiguration pluginConfig;
 
     private @Nullable MyParkourPaths paths;
     private @Nullable Connection conn;
@@ -67,10 +70,12 @@ public final class MyParkour extends JavaPlugin {
             .registerTypeAdapter(CourseFlag.class, CourseFlagJsonCodec.INSTANCE)
             .registerTypeAdapter(Course.class, CourseJsonCodec.INSTANCE)
             .registerTypeAdapter(CourseTime.class, CourseTimeJsonCodec.INSTANCE)
+            .registerTypeAdapter(ExitGameMode.class, ExitGameModeJsonCodec.INSTANCE)
             .registerTypeAdapter(ImmutableBoundingBox.class, ImmutableBoundingBoxJsonCodec.INSTANCE)
             .registerTypeAdapter(ImmutableLocation.class, ImmutableLocationJsonCodec.INSTANCE)
             .registerTypeAdapter(LeaderboardTimes.class, LeaderboardTimesJsonCodec.INSTANCE)
             .registerTypeAdapter(LocalDateTime.class, LocalDateTimeJsonCodec.INSTANCE)
+            .registerTypeAdapter(StartGameMode.class, StartGameModeJsonCodec.INSTANCE)
             .registerTypeAdapter(UUID.class, UUIDJsonCodec.INSTANCE)
             .create();
         translationStore = new SimpleTranslationStore();
@@ -79,6 +84,7 @@ public final class MyParkour extends JavaPlugin {
         runs = new CourseRuns();
         leaderboards = new Leaderboards();
         names = new PlayerNameCache();
+        pluginConfig = new MyParkourPluginConfiguration();
         paths = null;
         conn = null;
         create = null;
@@ -122,6 +128,10 @@ public final class MyParkour extends JavaPlugin {
         return names;
     }
 
+    public MyParkourPluginConfiguration getPluginConfig() {
+        return pluginConfig;
+    }
+
     public void reload() {
         try {
             Files.createDirectories(getDataPath());
@@ -133,6 +143,12 @@ public final class MyParkour extends JavaPlugin {
             getLogger().info("Finished reloading messages, courses, edits, and leaderboards");
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not complete plugin reload. This plugin will most likely behave abnormally!", e);
+        }
+        pluginConfig.generateDefaults();
+        try {
+            pluginConfig.getConfiguration().save(new File(getDataFolder(), "config.yml"));
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "Could not save plugin configuration file", e);
         }
     }
 
@@ -158,6 +174,7 @@ public final class MyParkour extends JavaPlugin {
             TimesCommand.register(commands.registrar());
         });
         names.load();
+        pluginConfig.reset(getConfig());
         reload();
         updateRunsTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, runs::update, 0, 1);
         getLogger().info("Scheduled runs updater task");

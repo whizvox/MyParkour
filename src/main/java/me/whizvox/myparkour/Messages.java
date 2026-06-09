@@ -54,6 +54,8 @@ public class Messages {
         m.put("myparkour.edit.set.displayName", "<green>Course display name has been set to <displayname>.</green>");
         m.put("myparkour.edit.set.start", "<green>Course start location has been set to <location>.</green>");
         m.put("myparkour.edit.set.exit", "<green>Course exit location has been set to <location>.</green>");
+        m.put("myparkour.edit.set.startGameMode", "Course start gamemode has been set to <yellow><gamemode></yellow>.");
+        m.put("myparkour.edit.set.exitGameMode", "Course exit gamemode has been set to <yellow><gamemode></yellow>.");
         m.put("myparkour.edit.checkpoint.add", "<green>Added new checkpoint <red>#<index></red> <checkpoint>.</green>");
         m.put("myparkour.edit.checkpoint.list.none", "<gray>No checkpoints found.</gray>");
         m.put("myparkour.edit.checkpoint.list.all", "<aqua>Checkpoints for <yellow><course_name></yellow></aqua>: <checkpoints>");
@@ -110,6 +112,8 @@ public class Messages {
         m.put("myparkour.debug.clear", "Cleared all debug data");
         m.put("myparkour.exception.invalidCourseFlag", "Invalid course flag: %s");
         m.put("myparkour.exception.unknownCourseTime", "Unknown course time: %d");
+        m.put("myparkour.exception.invalidStartGameMode", "Invalid start gamemode: %s, must be one of %s");
+        m.put("myparkour.exception.invalidExitGameMode", "Invalid exit gamemode: %s, must be one of %s");
         return m;
     }
 

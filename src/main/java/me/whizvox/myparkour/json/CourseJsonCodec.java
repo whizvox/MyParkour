@@ -2,9 +2,7 @@ package me.whizvox.myparkour.json;
 
 import com.google.gson.*;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import me.whizvox.myparkour.course.Checkpoint;
-import me.whizvox.myparkour.course.Course;
-import me.whizvox.myparkour.course.CourseFlag;
+import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.util.ImmutableLocation;
 
 import java.lang.reflect.Type;
@@ -33,6 +31,8 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
             checkpoints,
             flags,
             context.deserialize(root.get("exit"), ImmutableLocation.class),
+            root.has("startGameMode") ? context.deserialize(root.get("startGameMode"), StartGameMode.class) : StartGameMode.DEFAULT,
+            root.has("exitGameMode") ? context.deserialize(root.get("exitGameMode"), ExitGameMode.class) : ExitGameMode.DEFAULT,
             root.get("open").getAsBoolean()
         );
     }
@@ -51,6 +51,8 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
         src.flags().forEach(flag -> flagsArr.add(context.serialize(flag)));
         root.add("flags", flagsArr);
         root.add("exit", context.serialize(src.exit()));
+        root.add("startGameMode", context.serialize(src.startGameMode()));
+        root.add("exitGameMode", context.serialize(src.exitGameMode()));
         root.addProperty("open", src.open());
         return root;
     }

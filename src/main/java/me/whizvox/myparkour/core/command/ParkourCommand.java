@@ -7,11 +7,13 @@ import me.whizvox.myparkour.Messages;
 import me.whizvox.myparkour.MyParkour;
 import me.whizvox.myparkour.command.CourseArgumentType;
 import me.whizvox.myparkour.course.Course;
+import me.whizvox.myparkour.course.StartGameMode;
 import me.whizvox.myparkour.course.run.CourseRun;
 import me.whizvox.myparkour.util.CommandUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.permissions.Permission;
@@ -27,11 +29,23 @@ public class ParkourCommand {
     private static int run(CommandContext<CommandSourceStack> context) {
         Player player = (Player) context.getSource().getSender();
         Course course = CourseArgumentType.getCourse(context, "course");
+        GameMode gameMode = player.getGameMode();
         if (course.open()) {
             if (MyParkour.inst().getRuns().getRun(player).isEmpty()) {
                 player.teleportAsync(course.start().toLocation()).thenAccept(success -> {
                     if (success) {
-                        MyParkour.inst().getRuns().startRun(player, course);
+                        StartGameMode startGameMode;
+                        if (course.startGameMode() == StartGameMode.DEFAULT) {
+                            startGameMode = MyParkour.inst().getPluginConfig().getDefaultStartGameMode().orElse(StartGameMode.NONE);
+                        } else {
+                            startGameMode = course.startGameMode();
+                        }
+                        switch (startGameMode) {
+                            case SURVIVAL -> player.setGameMode(GameMode.SURVIVAL);
+                            case ADVENTURE -> player.setGameMode(GameMode.ADVENTURE);
+                            case CREATIVE -> player.setGameMode(GameMode.CREATIVE);
+                        }
+                        MyParkour.inst().getRuns().startRun(player, course, gameMode);
                         player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))), 2, 20, 10));
                     } else {
                         player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.start"));
