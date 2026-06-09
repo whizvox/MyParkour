@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static me.whizvox.myparkour.db.tables.PlayerNames.PLAYER_NAMES;
 
@@ -19,7 +20,11 @@ public class PlayerNameCache {
     private final Map<UUID, Entry> names;
 
     public PlayerNameCache() {
-        this.names = new Object2ObjectOpenHashMap<>();
+        names = new Object2ObjectOpenHashMap<>();
+    }
+
+    public Stream<Map.Entry<UUID, Entry>> stream() {
+        return names.entrySet().stream();
     }
 
     public void load() {

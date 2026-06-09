@@ -15,6 +15,7 @@ public class CommandExceptionTypes {
         INVALID_EXIT_GAMEMODE = new TranslatableCommandExceptionType("myparkour.exception.invalidExitGameMode", 2),
         UNKNOWN_COURSE_TIME = new TranslatableCommandExceptionType("myparkour.exception.unknownCourseTime", 1),
         MUST_BE_PLAYER = new TranslatableCommandExceptionType("exception.mustBePlayer"),
-        UNKNOWN_COURSE = new TranslatableCommandExceptionType("exception.unknownCourse", 1);
+        UNKNOWN_COURSE = new TranslatableCommandExceptionType("exception.unknownCourse", 1),
+        UNKNOWN_OFFLINE_PLAYER = new TranslatableCommandExceptionType("myparkour.exception.unknownOfflinePlayer", 1);
 
 }

@@ -100,7 +100,11 @@ public class Messages {
         m.put("myparkour.times.course.none", "<aqua>There are no times set for <course>.</aqua>");
         m.put("myparkour.times.course.header", "<aqua>Times for <course> (<yellow><current_page></yellow>/<yellow><total_pages></yellow>):</aqua>");
         m.put("myparkour.times.course.entry", "<gold>#<rank></gold> <red><time></red> by <yellow><player></yellow>");
+        m.put("myparkour.times.player.none", "<aqua>There are no times set by <player>.</aqua>");
+        m.put("myparkour.times.player.header", "<aqua>Times from <player> (<yellow><current_page></yellow>/<yellow><total_pages></yellow>):</aqua>");
+        m.put("myparkour.times.player.entry", "<gold>#<rank></gold> <red><time></red> on <yellow><course></yellow>");
         m.put("myparkour.times.info", "ID: <aqua><id></aqua>\nPlayer: <aqua><player_name></aqua> (<yellow><player_id></yellow>)\nCourse: <aqua><course></aqua> (<yellow><course_name></yellow>)\nTime: <aqua><time></aqua> (<yellow><time_ticks> ticks</yellow>)\nWhen Set: <aqua><when_set></aqua>\nRank: <aqua><rank></aqua>");
+        m.put("myparkour.times.lookup.none", "<red>Player <player> has not set a time on course <course>.</red>");
         m.put("myparkour.times.delete.one", "<gold>Time successfully deleted.</gold>");
         m.put("myparkour.times.delete.course", "<gold>Cleared all times for <course>.</gold>");
         m.put("myparkour.times.delete.course.none", "<gold><course> has no times to clear.</gold>");
@@ -114,6 +118,7 @@ public class Messages {
         m.put("myparkour.exception.unknownCourseTime", "Unknown course time: %d");
         m.put("myparkour.exception.invalidStartGameMode", "Invalid start gamemode: %s, must be one of %s");
         m.put("myparkour.exception.invalidExitGameMode", "Invalid exit gamemode: %s, must be one of %s");
+        m.put("myparkour.exception.unknownOfflinePlayer", "Unknown player: %s");
         return m;
     }
 
