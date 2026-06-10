@@ -67,12 +67,15 @@ public class MiniMessageUtils {
     public static Component formatCheckpoint(Checkpoint checkpoint) {
         return switch (checkpoint) {
             case BlockCheckpoint block -> formatBlockLocation(block.location());
-            case BoxCheckpoint box -> formatBox(box.box()).append(Component.text(" (")).append(Component.text(WorldUtils.getWorldName(box.worldId()), NamedTextColor.YELLOW));
+            case BoxCheckpoint box -> formatBox(box.box()).append(Component.text(" (")).append(Component.text(WorldUtils.getWorldName(box.worldId()), NamedTextColor.YELLOW)).append(Component.text(")"));
             case SplitCheckpoint split -> {
                 Component comp = Component.empty();
                 int index = 1;
                 for (Checkpoint cp : split.checkpoints()) {
-                    comp = comp.append(Component.text("\n  " + index + ". ")).append(formatCheckpoint(cp));
+                    if (index > 1) {
+                        comp = comp.appendNewline();
+                    }
+                    comp = comp.append(Component.text(index + ". ")).append(formatCheckpoint(cp));
                     index++;
                 }
                 yield comp;

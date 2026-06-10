@@ -48,7 +48,7 @@ public class Messages {
         m.put(MyParkourCommand.KEY_RELOAD, "<prefix> <green>Reload complete</green>");
         m.put("myparkour.edit.create.success", "<green>Successfully created a new parkour course <yellow><course></yellow>.</green> Run <yellow>/editcourse save</yellow> once you're finished editing.");
         m.put("myparkour.edit.edit.success", "<green>Course <course> is now being edited.</green> Run <yellow>/editcourse save</yellow> or <yellow>/editcourse discard</yellow> to stop editing.");
-        m.put("myparkour.edit.discard", "All changes to have been discarded.");
+        m.put("myparkour.edit.discard", "<gold>All changes have been discarded.</gold>");
         m.put("myparkour.edit.save", "<green>Course has been saved.</green>");
         m.put("myparkour.edit.set.name", "<green>Course name has been set to <yellow><name></yellow>.</green>");
         m.put("myparkour.edit.set.displayName", "<green>Course display name has been set to <displayname>.</green>");
@@ -85,6 +85,8 @@ public class Messages {
         m.put("myparkour.edit.open.alreadyOpen", "<gold>That course is already open.</gold>");
         m.put("myparkour.edit.close", "Course <yellow><course></yellow> is now closed.");
         m.put("myparkour.edit.close.alreadyClosed", "<gold>That course is already closed.</gold>");
+        m.put("myparkour.edit.delete.success", "<gold>Course successfully deleted.</gold>");
+        m.put("myparkour.edit.delete.open", "<red>That course is still open. If you want to delete it, you'll need to close it first: </red><yellow>/editcourse close <course></yellow>");
         m.put("myparkour.edit.error.couldNotSave", "<red>Could not save course: <reason>. Please report this to the plugin developer!</red>");
         m.put("myparkour.run.start", "<green>Running <course></green>");
         m.put("myparkour.run.exit", "Exited <course>");

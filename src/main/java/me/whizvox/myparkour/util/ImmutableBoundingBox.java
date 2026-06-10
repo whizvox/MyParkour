@@ -22,9 +22,9 @@ public record ImmutableBoundingBox(double x1, double y1, double z1, double x2, d
     }
 
     public boolean overlaps(BoundingBox other) {
-        return x1 < other.getMaxX() && x2 > other.getMinX() &&
-            y1 < other.getMaxY() && y2 > other.getMinY() &&
-            z1 < other.getMaxZ() && z2 > other.getMinZ();
+        return x1 <= other.getMaxX() && x2 >= other.getMinX() &&
+            y1 <= other.getMaxY() && y2 >= other.getMinY() &&
+            z1 <= other.getMaxZ() && z2 >= other.getMinZ();
     }
 
     public BoundingBox toBox() {

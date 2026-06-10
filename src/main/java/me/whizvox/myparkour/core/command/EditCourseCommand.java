@@ -29,7 +29,7 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
-import org.bukkit.util.BoundingBox;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,12 +55,14 @@ public class EditCourseCommand {
         course.setDisplayName(name);
         var result = MyParkour.inst().getEdits().setEditingCourse(player, course);
         switch (result) {
-            case SUCCESS -> player.sendMessage(Messages.translate("myparkour.edit.create.success", Map.of("course", name)));
-            case PLAYER_EDITING -> player.sendMessage(Messages.translate("myparkour.edit.warning.alreadyEditing", Map.of("course",
-                MyParkour.inst().getEdits().getEditing(player)
-                    .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "(unnamed)"))
-                    .orElse("(unknown)")
-            )));
+            case SUCCESS ->
+                player.sendMessage(Messages.translate("myparkour.edit.create.success", Map.of("course", name)));
+            case PLAYER_EDITING ->
+                player.sendMessage(Messages.translate("myparkour.edit.warning.alreadyEditing", Map.of("course",
+                    MyParkour.inst().getEdits().getEditing(player)
+                        .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "(unnamed)"))
+                        .orElse("(unknown)")
+                )));
             default -> throw new IllegalStateException("Illegal result while creating course: " + result);
         }
         return SINGLE_SUCCESS;
@@ -73,7 +75,8 @@ public class EditCourseCommand {
             EditableCourse edit = new EditableCourse(course);
             var result = MyParkour.inst().getEdits().setEditingCourse(player, edit);
             switch (result) {
-                case SUCCESS -> player.sendMessage(Messages.translate("myparkour.edit.edit.success", Map.of("course", course.name())));
+                case SUCCESS ->
+                    player.sendMessage(Messages.translate("myparkour.edit.edit.success", Map.of("course", course.name())));
                 case PLAYER_EDITING -> {
                     String courseName = MyParkour.inst().getEdits().getEditing(player)
                         .map(otherCourse -> Objects.requireNonNullElse(otherCourse.getName(), "???"))
@@ -231,17 +234,47 @@ public class EditCourseCommand {
                     }
                     comp = comp.append(Component.text("[" + (i + 1) + "]", NamedTextColor.AQUA, TextDecoration.UNDERLINED).hoverEvent(HoverEvent.showText(MiniMessageUtils.formatCheckpoint(checkpoint))));
                 }
-                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.list.header", Map.of("course_name", Objects.requireNonNullElse(course.getName(), "???"), "checkpoints", comp)));
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.list.all", Map.of("course_name", Objects.requireNonNullElse(course.getName(), "???"), "checkpoints", comp)));
             }
         });
         return SINGLE_SUCCESS;
     }
 
-    private static int addCheckpoint(CommandContext<CommandSourceStack> context, Checkpoint checkpoint) throws CommandSyntaxException {
+    private static void addCheckpoint(CommandContext<CommandSourceStack> context, Checkpoint checkpoint, int index) throws CommandSyntaxException {
         actOnPlayerCourse(context, course -> {
-            course.addCheckpoint(checkpoint);
-            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.add", Map.of("index", course.getCheckpoints().size(), "checkpoint", MiniMessageUtils.formatCheckpoint(checkpoint))));
+            int finalIndex;
+            if (index > 0 && index <= course.getCheckpoints().size()) {
+                course.insertCheckpoint(index - 1, checkpoint);
+                finalIndex = index;
+            } else {
+                course.addCheckpoint(checkpoint);
+                finalIndex = course.getCheckpoints().size();
+            }
+            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.add", Map.of("index", finalIndex, "checkpoint", MiniMessageUtils.formatCheckpoint(checkpoint))));
         });
+    }
+
+    private static int addBlockCheckpoint(CommandContext<CommandSourceStack> context, int index, @Nullable BlockPositionResolver blockPos, @Nullable FinePositionResolver respawnPos) throws CommandSyntaxException {
+        Player player = (Player) context.getSource().getSender();
+        BlockLocation blockLoc = new BlockLocation(blockPos == null ? player.getLocation() : blockPos.resolve(context.getSource()).toLocation(player.getWorld()));
+        ImmutableLocation respawnLoc = new ImmutableLocation(respawnPos == null ? player.getLocation() : respawnPos.resolve(context.getSource()).toLocation(player.getWorld()));
+        addCheckpoint(context, new BlockCheckpoint(blockLoc, respawnLoc), index);
+        return SINGLE_SUCCESS;
+    }
+
+    private static int addBoxCheckpoint(CommandContext<CommandSourceStack> context, int index, @Nullable FinePositionResolver respawnPos) throws CommandSyntaxException {
+        Player player = (Player) context.getSource().getSender();
+        BlockPosition corner1 = context.getArgument("corner1", BlockPositionResolver.class).resolve(context.getSource());
+        BlockPosition corner2 = context.getArgument("corner2", BlockPositionResolver.class).resolve(context.getSource());
+        ImmutableLocation respawn = new ImmutableLocation(respawnPos == null ? player.getLocation() : respawnPos.resolve(context.getSource()).toLocation(player.getWorld()));
+        int x1 = Math.min(corner1.blockX(), corner2.blockX());
+        int x2 = Math.max(corner1.blockX(), corner2.blockX()) + 1;
+        int y1 = Math.min(corner1.blockY(), corner2.blockY());
+        int y2 = Math.max(corner1.blockY(), corner2.blockY()) + 1;
+        int z1 = Math.min(corner1.blockZ(), corner2.blockZ());
+        int z2 = Math.max(corner1.blockZ(), corner2.blockZ()) + 1;
+        ImmutableBoundingBox box = new ImmutableBoundingBox(x1, y1, z1, x2, y2, z2);
+        addCheckpoint(context, new BoxCheckpoint(box, player.getWorld().getUID(), respawn), index);
         return SINGLE_SUCCESS;
     }
 
@@ -249,8 +282,8 @@ public class EditCourseCommand {
         actOnPlayerCourse(context, course -> {
             int index = context.getArgument("index", Integer.class);
             if (index <= course.getCheckpoints().size()) {
-                course.getCheckpoints().remove(index);
-                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.remove"));
+                course.getCheckpoints().remove(index - 1);
+                context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.remove", Map.of("index", index)));
             } else {
                 context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.warning.invalidCheckpointIndex", Map.of("index", index)));
             }
@@ -288,7 +321,7 @@ public class EditCourseCommand {
             });
             Checkpoint checkpoint = new SplitCheckpoint(checkpoints);
             course.addCheckpoint(checkpoint);
-            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.add", Map.of("checkpoint", checkpoint)));
+            context.getSource().getSender().sendMessage(Messages.translate("myparkour.edit.checkpoint.add", Map.of("index", course.getCheckpoints().size(), "checkpoint", MiniMessageUtils.formatCheckpoint(checkpoint))));
         });
         return SINGLE_SUCCESS;
     }
@@ -356,7 +389,7 @@ public class EditCourseCommand {
         return SINGLE_SUCCESS;
     }
 
-    private static int changeOpenStatus(CommandContext<CommandSourceStack> context, boolean shouldOpen) throws CommandSyntaxException {
+    private static int changeOpenStatus(CommandContext<CommandSourceStack> context, boolean shouldOpen) {
         Course course = CourseArgumentType.getCourse(context, "course");
         CommandSender sender = context.getSource().getSender();
         if (shouldOpen != course.open()) {
@@ -370,6 +403,19 @@ public class EditCourseCommand {
             }
         } else {
             sender.sendMessage(Messages.translate(shouldOpen ? "myparkour.edit.open.alreadyOpen" : "myparkour.edit.close.alreadyClosed"));
+        }
+        return SINGLE_SUCCESS;
+    }
+
+    private static int deleteCourse(CommandContext<CommandSourceStack> context) {
+        Course course = CourseArgumentType.getCourse(context, "course");
+        CommandSender sender = context.getSource().getSender();
+        if (!course.open()) {
+            MyParkour.inst().getCourses().remove(course.id());
+            MyParkour.inst().getLeaderboards().deleteByCourse(course.id());
+            sender.sendMessage(Messages.translate("myparkour.edit.delete.success"));
+        } else {
+            sender.sendMessage(Messages.translate("myparkour.edit.delete.open", Map.of("course", course.name())));
         }
         return SINGLE_SUCCESS;
     }
@@ -433,35 +479,93 @@ public class EditCourseCommand {
                     .executes(EditCourseCommand::listCheckpoints)
                 )
                 .then(Commands.literal("add")
-                    .then(Commands.argument("position", ArgumentTypes.blockPosition())
-                        .executes(context -> {
-                            Player player = (Player) context.getSource().getSender();
-                            BlockPosition pos = context.getArgument("position", BlockPositionResolver.class).resolve(context.getSource());
-                            Location loc = pos.toLocation(player.getWorld());
-                            return addCheckpoint(context, new BlockCheckpoint(new BlockLocation(loc), new ImmutableLocation(player.getLocation())));
-                        })
+                    .then(Commands.literal("block")
+                        .then(Commands.argument("position", ArgumentTypes.blockPosition())
+                            .then(Commands.argument("respawn", ArgumentTypes.finePosition())
+                                .executes(context -> addBlockCheckpoint(
+                                    context,
+                                    -1,
+                                    context.getArgument("position", BlockPositionResolver.class),
+                                    context.getArgument("respawn", FinePositionResolver.class)
+                                ))
+                            )
+                            .executes(context -> addBlockCheckpoint(
+                                context,
+                                -1,
+                                context.getArgument("position", BlockPositionResolver.class),
+                                null
+                            ))
+                        )
+                        .executes(context -> addBlockCheckpoint(context, -1, null, null))
                     )
-                    .executes(context -> {
-                        Player player = (Player) context.getSource().getSender();
-                        return addCheckpoint(context, new BlockCheckpoint(new BlockLocation(player.getLocation()), new ImmutableLocation(player.getLocation())));
-                    })
-                )
-                .then(Commands.literal("addbox")
-                    .then(Commands.argument("corner1", ArgumentTypes.blockPosition())
-                        .then(Commands.argument("corner2", ArgumentTypes.blockPosition())
-                            .executes(context -> {
-                                Player player = (Player) context.getSource().getSender();
-                                BlockPosition corner1 = context.getArgument("corner1", BlockPositionResolver.class).resolve(context.getSource());
-                                BlockPosition corner2 = context.getArgument("corner2", BlockPositionResolver.class).resolve(context.getSource());
-                                BoundingBox box = new BoundingBox(corner1.x(), corner1.y(), corner1.z(), corner2.x(), corner2.y(), corner2.z());
-                                return addCheckpoint(context, new BoxCheckpoint(new ImmutableBoundingBox(box), player.getWorld().getUID(), new ImmutableLocation(player.getLocation())));
-                            })
+                    .then(Commands.literal("box")
+                        .then(Commands.argument("corner1", ArgumentTypes.blockPosition())
+                            .then(Commands.argument("corner2", ArgumentTypes.blockPosition())
+                                .then(Commands.argument("respawn", ArgumentTypes.finePosition())
+                                    .executes(context -> addBoxCheckpoint(
+                                        context,
+                                        -1,
+                                        context.getArgument("respawn", FinePositionResolver.class)
+                                    ))
+                                )
+                                .executes(context -> addBoxCheckpoint(
+                                    context,
+                                    -1,
+                                    null
+                                ))
+                            )
+                        )
+                    )
+                    .then(Commands.literal("split")
+                        .then(Commands.argument("checkpoints", IntegersArgumentType.integers())
+                            .executes(EditCourseCommand::addSplitCheckpoint)
                         )
                     )
                 )
-                .then(Commands.literal("addsplit")
-                    .then(Commands.argument("checkpoints", IntegersArgumentType.integers())
-                        .executes(EditCourseCommand::addSplitCheckpoint)
+                .then(Commands.literal("insert")
+                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                        .then(Commands.literal("block")
+                            .then(Commands.argument("position", ArgumentTypes.blockPosition())
+                                .then(Commands.argument("respawn", ArgumentTypes.finePosition())
+                                    .executes(context -> addBlockCheckpoint(
+                                        context,
+                                        IntegerArgumentType.getInteger(context, "index"),
+                                        context.getArgument("position", BlockPositionResolver.class),
+                                        context.getArgument("respawn", FinePositionResolver.class)
+                                    ))
+                                )
+                                .executes(context -> addBlockCheckpoint(
+                                    context,
+                                    IntegerArgumentType.getInteger(context, "index"),
+                                    context.getArgument("position", BlockPositionResolver.class),
+                                    null
+                                ))
+                            )
+                            .executes(context -> addBlockCheckpoint(context, -1, null, null))
+                        )
+                        .then(Commands.literal("box")
+                            .then(Commands.argument("corner1", ArgumentTypes.blockPosition())
+                                .then(Commands.argument("corner2", ArgumentTypes.blockPosition())
+                                    .then(Commands.argument("respawn", ArgumentTypes.finePosition())
+                                        .executes(context -> addBoxCheckpoint(
+                                            context,
+                                            IntegerArgumentType.getInteger(context, "index"),
+                                            context.getArgument("respawn", FinePositionResolver.class)
+                                        ))
+                                    )
+                                    .executes(context -> addBoxCheckpoint(
+                                        context,
+                                        IntegerArgumentType.getInteger(context, "index"),
+                                        null
+                                    ))
+                                )
+                            )
+                        )
+                        .then(Commands.literal("split")
+                            .then(Commands.argument("checkpoints", IntegersArgumentType.integers())
+                                .executes(EditCourseCommand::addSplitCheckpoint)
+                            )
+                        )
                     )
                 )
                 .then(Commands.literal("remove")
@@ -506,6 +610,11 @@ public class EditCourseCommand {
             .then(Commands.literal("close")
                 .then(Commands.argument("course", CourseArgumentType.course())
                     .executes(context -> changeOpenStatus(context, false))
+                )
+            )
+            .then(Commands.literal("delete")
+                .then(Commands.argument("course", CourseArgumentType.course())
+                    .executes(EditCourseCommand::deleteCourse)
                 )
             )
             .then(Commands.literal("discard")

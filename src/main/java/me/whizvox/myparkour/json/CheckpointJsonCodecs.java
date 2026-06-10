@@ -62,8 +62,8 @@ public class CheckpointJsonCodecs {
         public BoxCheckpoint deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             JsonObject root = json.getAsJsonObject();
             return new BoxCheckpoint(
-                context.deserialize(root.get("world"), UUID.class),
                 context.deserialize(root.get("box"), ImmutableBoundingBox.class),
+                context.deserialize(root.get("world"), UUID.class),
                 context.deserialize(root.get("respawn"), ImmutableLocation.class)
             );
         }
