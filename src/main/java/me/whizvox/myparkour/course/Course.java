@@ -1,6 +1,7 @@
 package me.whizvox.myparkour.course;
 
 import me.whizvox.myparkour.util.ImmutableLocation;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Collections;
@@ -8,11 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 @NotNullByDefault
-public record Course(int id, String name, String displayName, ImmutableLocation start, List<Checkpoint> checkpoints,
+public record Course(int id, String name, Component displayName, ImmutableLocation start, List<Checkpoint> checkpoints,
                      Set<CourseFlag> flags, ImmutableLocation exit, StartGameMode startGameMode,
                      ExitGameMode exitGameMode, boolean open) {
 
-    public Course(int id, String name, String displayName, ImmutableLocation start, List<Checkpoint> checkpoints,
+    public Course(int id, String name, Component displayName, ImmutableLocation start, List<Checkpoint> checkpoints,
                   Set<CourseFlag> flags, ImmutableLocation exit, StartGameMode startGameMode, ExitGameMode exitGameMode,
                   boolean open) {
         this.id = id;

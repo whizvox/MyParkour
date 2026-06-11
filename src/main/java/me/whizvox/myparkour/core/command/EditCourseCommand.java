@@ -24,12 +24,12 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.permissions.Permission;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public class EditCourseCommand {
         String name = StringArgumentType.getString(context, "name");
         EditableCourse course = new EditableCourse();
         course.setName(name);
-        course.setDisplayName(name);
+        course.setDisplayName(Component.text(name));
         var result = MyParkour.inst().getEdits().setEditingCourse(player, course);
         switch (result) {
             case SUCCESS ->
@@ -204,8 +204,8 @@ public class EditCourseCommand {
     }
 
     private static int setDisplayName(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        String displayName = StringArgumentType.getString(context, "displayname");
-        setProperty(context, displayName, EditableCourse::setDisplayName, (sender, s) -> sender.sendMessage(Messages.translate("myparkour.edit.set.displayName", Map.of("displayname", MiniMessage.miniMessage().deserialize(s)))));
+        Component displayName = MiniMessage.miniMessage().deserialize(StringArgumentType.getString(context, "displayname"));
+        setProperty(context, displayName, EditableCourse::setDisplayName, (sender, n) -> sender.sendMessage(Messages.translate("myparkour.edit.set.displayName", Map.of("displayname", n))));
         return SINGLE_SUCCESS;
     }
 
@@ -368,6 +368,52 @@ public class EditCourseCommand {
         return SINGLE_SUCCESS;
     }
 
+    private static void spawnCheckpointEntities(Checkpoint checkpoint, int index, List<Entity> out) {
+        switch (checkpoint) {
+            case BlockCheckpoint block -> {
+                World world = Objects.requireNonNull(Bukkit.getWorld(block.location().worldId()), "Invalid world ID: " + block.location().worldId());
+                out.add(world.spawn(new Location(world, block.location().x(), block.location().y(), block.location().z()), BlockDisplay.class, entity -> {
+                    entity.setBlock(Material.RED_STAINED_GLASS.createBlockData());
+                }));
+                out.add(world.spawn(new Location(world, block.location().x() + 0.5, block.location().y() + 1.2, block.location().z() + 0.5), TextDisplay.class, entity -> {
+                    entity.text(Component.text("Checkpoint #" + index));
+                    entity.setBillboard(Display.Billboard.CENTER);
+                }));
+            }
+            case BoxCheckpoint box -> {
+                World world = Objects.requireNonNull(Bukkit.getWorld(box.worldId()), "Invalid world ID: " + box.worldId());
+                out.add(world.spawn(new Location(world, box.box().x1(), box.box().y1(), box.box().z1()), BlockDisplay.class, entity -> {
+                    entity.setBlock(Material.RED_STAINED_GLASS.createBlockData());
+                    entity.setTransformationMatrix(new Matrix4f()
+                        .scale((float) Math.abs(box.box().x2() - box.box().x1()), (float) Math.abs(box.box().y2() - box.box().y1()), (float) Math.abs(box.box().z2() - box.box().z1()))
+                    );
+                }));
+                out.add(world.spawn(new Location(world, (box.box().x1() + box.box().x2()) / 2.0, box.box().y2() + 0.2, (box.box().z1() + box.box().z2()) / 2.0), TextDisplay.class, entity -> {
+                    entity.text(Component.text("Checkpoint #" + index));
+                    entity.setBillboard(Display.Billboard.VERTICAL);
+                }));
+            }
+            case SplitCheckpoint split -> {
+                split.checkpoints().forEach(localCheckpoint -> {
+                    if (!(localCheckpoint instanceof SplitCheckpoint)) {
+                        spawnCheckpointEntities(localCheckpoint, index, out);
+                    }
+                });
+            }
+        }
+    }
+
+    private static int viewCheckpoints(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        actOnPlayerCourse(context, course -> {
+            List<Entity> tempEntities = new ArrayList<>();
+            for (int i = 0; i < course.getCheckpoints().size(); i++) {
+                spawnCheckpointEntities(course.getCheckpoints().get(i), i + 1, tempEntities);
+            }
+            Bukkit.getScheduler().runTaskLater(MyParkour.inst(), () -> tempEntities.forEach(Entity::remove), 5 * 20);
+        });
+        return SINGLE_SUCCESS;
+    }
+
     private static int changeFlagStatus(CommandContext<CommandSourceStack> context, boolean shouldSet) throws CommandSyntaxException {
         actOnPlayerCourse(context, course -> {
             CommandSender sender = context.getSource().getSender();
@@ -477,6 +523,9 @@ public class EditCourseCommand {
             .then(Commands.literal("checkpoint")
                 .then(Commands.literal("list")
                     .executes(EditCourseCommand::listCheckpoints)
+                )
+                .then(Commands.literal("view")
+                    .executes(EditCourseCommand::viewCheckpoints)
                 )
                 .then(Commands.literal("add")
                     .then(Commands.literal("block")

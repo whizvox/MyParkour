@@ -4,6 +4,7 @@ import com.google.gson.*;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.util.ImmutableLocation;
+import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
         return new Course(
             root.get("id").getAsInt(),
             root.get("name").getAsString(),
-            root.get("displayName").getAsString(),
+            JSONComponentSerializer.json().deserialize(root.get("displayName").getAsString()),
             context.deserialize(root.get("start"), ImmutableLocation.class),
             checkpoints,
             flags,
@@ -42,7 +43,7 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
         JsonObject root = new JsonObject();
         root.addProperty("id", src.id());
         root.addProperty("name", src.name());
-        root.addProperty("displayName", src.displayName());
+        root.addProperty("displayName", JSONComponentSerializer.json().serialize(src.displayName()));
         JsonArray checkpointsArr = new JsonArray(src.checkpoints().size());
         src.checkpoints().forEach(checkpoint -> checkpointsArr.add(context.serialize(checkpoint, Checkpoint.class)));
         root.add("checkpoints", checkpointsArr);

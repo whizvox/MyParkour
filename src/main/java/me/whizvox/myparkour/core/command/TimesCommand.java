@@ -20,7 +20,6 @@ import me.whizvox.myparkour.util.Page;
 import me.whizvox.myparkour.util.StringUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -52,7 +51,7 @@ public class TimesCommand {
             "id", time.id(),
             "player_name", MyParkour.inst().getNames().getDisplayName(time.playerId()),
             "player_id", time.playerId(),
-            "course", MiniMessage.miniMessage().deserialize(course.displayName()),
+            "course", course.displayName(),
             "course_name", course.name(),
             "time", StringUtils.formatTime(time.time()),
             "time_ticks", time.time(),
@@ -67,7 +66,7 @@ public class TimesCommand {
         Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setCourseId(course.id()).setAscending(true).setPage(page - 1));
         if (!times.items().isEmpty()) {
             boolean canSeeInfo = sender.hasPermission(PERMISSION_TIME_INFO);
-            Component comp = Messages.translate("myparkour.times.course.header", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()), "current_page", times.page() + 1, "total_pages", times.totalPages()));
+            Component comp = Messages.translate("myparkour.times.course.header", Map.of("course", course.displayName(), "current_page", times.page() + 1, "total_pages", times.totalPages()));
             for (CourseTime item : times.items()) {
                 Component basicInfo = Messages.translate("myparkour.times.course.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MyParkour.inst().getNames().getDisplayName(item.playerId())));
                 if (canSeeInfo) {
@@ -78,7 +77,7 @@ public class TimesCommand {
             }
             sender.sendMessage(comp);
         } else {
-            sender.sendMessage(Messages.translate("myparkour.times.course.none", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))));
+            sender.sendMessage(Messages.translate("myparkour.times.course.none", Map.of("course", course.displayName())));
         }
         return SINGLE_SUCCESS;
     }
@@ -92,7 +91,7 @@ public class TimesCommand {
             Component comp = Messages.translate("myparkour.times.player.header", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "current_page", times.page() + 1, "total_pages", times.totalPages()));
             for (CourseTime item : times.items()) {
                 Component courseName = MyParkour.inst().getCourses().get(item.courseId())
-                    .map(course -> MiniMessage.miniMessage().deserialize(course.displayName()))
+                    .map(Course::displayName)
                     .orElse(Component.text("???", NamedTextColor.DARK_RED));
                 Component basicInfo = Messages.translate("myparkour.times.player.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "course", courseName));
                 if (canSeeInfo) {
@@ -121,7 +120,7 @@ public class TimesCommand {
         MyParkour.inst().getLeaderboards().getTime(player.getUniqueId(), course.id()).ifPresentOrElse(time -> {
             sender.sendMessage(getTimeInfo(time));
         }, () -> {
-            sender.sendMessage(Messages.translate("myparkour.times.lookup.none", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "course", MiniMessage.miniMessage().deserialize(course.displayName()))));
+            sender.sendMessage(Messages.translate("myparkour.times.lookup.none", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "course", course.displayName())));
         });
         return SINGLE_SUCCESS;
     }
@@ -136,7 +135,7 @@ public class TimesCommand {
     private static int deleteTimesForCourse(CommandContext<CommandSourceStack> context) {
         Course course = CourseArgumentType.getCourse(context, "course");
         boolean success = MyParkour.inst().getLeaderboards().deleteByCourse(course.id());
-        context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.clear.course" + (success ? "" : ".none"), Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))));
+        context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.clear.course" + (success ? "" : ".none"), Map.of("course", course.displayName())));
         return SINGLE_SUCCESS;
     }
 

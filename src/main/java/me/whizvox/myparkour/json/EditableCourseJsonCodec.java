@@ -6,6 +6,7 @@ import me.whizvox.myparkour.course.Checkpoint;
 import me.whizvox.myparkour.course.CourseFlag;
 import me.whizvox.myparkour.course.edit.EditableCourse;
 import me.whizvox.myparkour.util.ImmutableLocation;
+import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ public class EditableCourseJsonCodec implements JsonSerializer<EditableCourse>, 
             course.setName(obj.get("name").getAsString());
         }
         if (obj.has("displayName")) {
-            course.setDisplayName(obj.get("displayName").getAsString());
+            course.setDisplayName(JSONComponentSerializer.json().deserialize(obj.get("displayName").getAsString()));
         }
         if (obj.has("checkpoints")) {
             List<Checkpoint> checkpoints = context.deserialize(obj.get("checkpoints"), new TypeToken<ArrayList<Checkpoint>>(){}.getType());
@@ -50,7 +51,7 @@ public class EditableCourseJsonCodec implements JsonSerializer<EditableCourse>, 
             root.addProperty("name", src.getName());
         }
         if (src.getDisplayName() != null) {
-            root.addProperty("displayName", src.getDisplayName());
+            root.addProperty("displayName", JSONComponentSerializer.json().serialize(src.getDisplayName()));
         }
         if (!src.getCheckpoints().isEmpty()) {
             root.add("checkpoints", context.serialize(src.getCheckpoints()));

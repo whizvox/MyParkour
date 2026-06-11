@@ -87,8 +87,6 @@ public class CourseEdits implements Persistent<List<CourseEdits.Entry>> {
     public @Nullable Courses.EditResult stopEditingCourse(Player player, boolean saveChanges) {
         EditableCourse editableCourse = courseEdits.get(player.getUniqueId());
         if (editableCourse != null) {
-            courseEditIds.remove(editableCourse.getId());
-            courseEdits.remove(player.getUniqueId());
             if (saveChanges) {
                 Courses.EditResult result;
                 if (editableCourse.isNew()) {
@@ -99,8 +97,9 @@ public class CourseEdits implements Persistent<List<CourseEdits.Entry>> {
                 if (result != Courses.EditResult.SUCCESS) {
                     return result;
                 }
-                courseEdits.remove(player.getUniqueId());
             }
+            courseEditIds.remove(editableCourse.getId());
+            courseEdits.remove(player.getUniqueId());
             return Courses.EditResult.SUCCESS;
         }
         return null;

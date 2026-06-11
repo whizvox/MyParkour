@@ -11,7 +11,6 @@ import me.whizvox.myparkour.course.StartGameMode;
 import me.whizvox.myparkour.course.run.CourseRun;
 import me.whizvox.myparkour.util.CommandUtils;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -46,7 +45,7 @@ public class ParkourCommand {
                             case CREATIVE -> player.setGameMode(GameMode.CREATIVE);
                         }
                         MyParkour.inst().getRuns().startRun(player, course, gameMode);
-                        player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", MiniMessage.miniMessage().deserialize(course.displayName()))), 2, 20, 10));
+                        player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", course.displayName())), 2, 20, 10));
                     } else {
                         player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.start"));
                     }
@@ -74,7 +73,7 @@ public class ParkourCommand {
         MyParkour.inst().getRuns().stop(player).ifPresentOrElse(run -> {
             player.teleportAsync(run.getCourse().exit().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
                 if (success) {
-                    player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", MiniMessage.miniMessage().deserialize(run.getCourse().displayName()))));
+                    player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", run.getCourse().displayName())));
                 } else {
                     player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
                 }

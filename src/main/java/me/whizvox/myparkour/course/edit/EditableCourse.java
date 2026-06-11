@@ -4,15 +4,19 @@ import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.util.ImmutableLocation;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public class EditableCourse {
 
     private int id;
     private @Nullable String name;
-    private @Nullable String displayName;
+    private @Nullable Component displayName;
     private final List<Checkpoint> checkpoints;
     private @Nullable ImmutableLocation start;
     private final Set<CourseFlag> flags;
@@ -24,7 +28,7 @@ public class EditableCourse {
     public EditableCourse() {
         id = 0;
         name = "";
-        displayName = "";
+        displayName = Component.empty();
         checkpoints = new ArrayList<>();
         start = null;
         flags = new ObjectArraySet<>();
@@ -61,7 +65,7 @@ public class EditableCourse {
         return name;
     }
 
-    public @Nullable String getDisplayName() {
+    public @Nullable Component getDisplayName() {
         return displayName;
     }
 
@@ -101,7 +105,7 @@ public class EditableCourse {
         this.name = name;
     }
 
-    public void setDisplayName(String displayName) {
+    public void setDisplayName(Component displayName) {
         this.displayName = displayName;
     }
 
@@ -161,7 +165,7 @@ public class EditableCourse {
         if (name == null || name.isBlank()) {
             return ValidResult.MISSING_NAME;
         }
-        if (displayName == null || displayName.isBlank()) {
+        if (displayName == null) {
             return ValidResult.MISSING_DISPLAY_NAME;
         }
         if (checkpoints.isEmpty()) {
