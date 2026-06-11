@@ -72,20 +72,24 @@ public class CourseRun {
             if (!success) {
                 player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
             }
-            ExitGameMode exitGameMode;
-            if (course.exitGameMode() == ExitGameMode.DEFAULT) {
-                exitGameMode = MyParkour.inst().getPluginConfig().getDefaultExitGameMode().orElse(ExitGameMode.NONE);
-            } else {
-                exitGameMode = course.exitGameMode();
-            }
-            switch (exitGameMode) {
-                case SURVIVAL -> player.setGameMode(GameMode.SURVIVAL);
-                case ADVENTURE -> player.setGameMode(GameMode.ADVENTURE);
-                case CREATIVE -> player.setGameMode(GameMode.CREATIVE);
-                case SPECTATOR -> player.setGameMode(GameMode.SPECTATOR);
-                case PREVIOUS -> player.setGameMode(previousGameMode);
-            }
+            handleExitGameMode();
         });
+    }
+
+    public void handleExitGameMode() {
+        ExitGameMode exitGameMode;
+        if (course.exitGameMode() == ExitGameMode.DEFAULT) {
+            exitGameMode = MyParkour.inst().getPluginConfig().getDefaultExitGameMode().orElse(ExitGameMode.NONE);
+        } else {
+            exitGameMode = course.exitGameMode();
+        }
+        switch (exitGameMode) {
+            case SURVIVAL -> player.setGameMode(GameMode.SURVIVAL);
+            case ADVENTURE -> player.setGameMode(GameMode.ADVENTURE);
+            case CREATIVE -> player.setGameMode(GameMode.CREATIVE);
+            case SPECTATOR -> player.setGameMode(GameMode.SPECTATOR);
+            case PREVIOUS -> player.setGameMode(previousGameMode);
+        }
     }
 
     public Course getCourse() {

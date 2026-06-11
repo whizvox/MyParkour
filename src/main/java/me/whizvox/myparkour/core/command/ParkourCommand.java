@@ -72,6 +72,7 @@ public class ParkourCommand {
         Player player = (Player) context.getSource().getSender();
         MyParkour.inst().getRuns().stop(player).ifPresentOrElse(run -> {
             player.teleportAsync(run.getCourse().exit().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
+                run.handleExitGameMode();
                 if (success) {
                     player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", run.getCourse().displayName())));
                 } else {

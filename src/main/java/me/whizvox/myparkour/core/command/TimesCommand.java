@@ -82,9 +82,7 @@ public class TimesCommand {
         return SINGLE_SUCCESS;
     }
 
-    private static int showPlayerTimes(CommandContext<CommandSourceStack> context, int page) {
-        CommandSender sender = context.getSource().getSender();
-        OfflinePlayer player = OfflinePlayerArgumentType.getOfflinePlayer(context, "player");
+    private static void showPlayerTimes(CommandSender sender, OfflinePlayer player, int page) {
         Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setPlayerId(player.getUniqueId()).setAscending(true).setPage(page - 1));
         if (!times.items().isEmpty()) {
             boolean canSeeInfo = sender.hasPermission(PERMISSION_TIME_INFO);
@@ -104,6 +102,18 @@ public class TimesCommand {
         } else {
             sender.sendMessage(Messages.translate("myparkour.times.player.none", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()))));
         }
+    }
+
+    private static int showPlayerTimes(CommandContext<CommandSourceStack> context, int page) {
+        CommandSender sender = context.getSource().getSender();
+        OfflinePlayer player = OfflinePlayerArgumentType.getOfflinePlayer(context, "player");
+        showPlayerTimes(sender, player, page);
+        return SINGLE_SUCCESS;
+    }
+
+    private static int showSelfTimes(CommandContext<CommandSourceStack> context, int page) {
+        Player player = (Player) context.getSource().getSender();
+        showPlayerTimes(player, player, page);
         return SINGLE_SUCCESS;
     }
 
@@ -173,6 +183,12 @@ public class TimesCommand {
                     )
                     .executes(context -> showPlayerTimes(context, 1))
                 )
+            )
+            .then(Commands.literal("self")
+                .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                    .executes(context -> showSelfTimes(context, IntegerArgumentType.getInteger(context, "page")))
+                )
+                .executes(context -> showSelfTimes(context, 1))
             )
             .then(Commands.literal("info")
                 .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_TIME_INFO))

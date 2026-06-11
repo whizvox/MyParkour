@@ -24,7 +24,10 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.permissions.Permission;
@@ -45,7 +48,8 @@ public class EditCourseCommand {
 
     public static final Permission
         PERMISSION_CREATE = createPermission("course.create"),
-        PERMISSION_EDIT = createPermission("course.edit");
+        PERMISSION_EDIT = createPermission("course.edit"),
+        PERMISSION_DELETE = createPermission("course.delete");
 
     private static int createNewCourse(CommandContext<CommandSourceStack> context) {
         Player player = (Player) context.getSource().getSender();
@@ -662,6 +666,7 @@ public class EditCourseCommand {
                 )
             )
             .then(Commands.literal("delete")
+                .requires(source -> CommandUtils.senderHasPermission(source, PERMISSION_DELETE))
                 .then(Commands.argument("course", CourseArgumentType.course())
                     .executes(EditCourseCommand::deleteCourse)
                 )

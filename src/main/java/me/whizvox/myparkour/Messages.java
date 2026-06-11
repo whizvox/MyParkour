@@ -114,6 +114,9 @@ public class Messages {
         m.put("myparkour.times.delete.player.none", "<gold><player> has not set any times.</gold>");
         m.put("myparkour.times.delete.all", "<gold>Cleared all course times.</gold>");
         m.put("myparkour.times.delete.all.none", "<gold>There are no times to clear.</gold>");
+        m.put("myparkour.sign.place", "<green>Parkour sign successfully placed.</green>");
+        m.put("myparkour.sign.replace", "<green>Parkour sign successfully replaced.</green>");
+        m.put("myparkour.sign.break", "<gold>Parkour sign has been deleted.</gold>");
         m.put("myparkour.debug.addFakeTimes", "Fake times added to <course>");
         m.put("myparkour.debug.clear", "Cleared all debug data");
         m.put("myparkour.exception.invalidCourseFlag", "Invalid course flag: %s");

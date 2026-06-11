@@ -15,6 +15,7 @@ import me.whizvox.myparkour.course.leaderboard.LeaderboardTimes;
 import me.whizvox.myparkour.course.leaderboard.Leaderboards;
 import me.whizvox.myparkour.course.run.CourseRuns;
 import me.whizvox.myparkour.json.*;
+import me.whizvox.myparkour.sign.*;
 import me.whizvox.myparkour.util.BlockLocation;
 import me.whizvox.myparkour.util.ImmutableBoundingBox;
 import me.whizvox.myparkour.util.ImmutableLocation;
@@ -49,6 +50,7 @@ public final class MyParkour extends JavaPlugin {
     private final CourseRuns runs;
     private final Leaderboards leaderboards;
     private final PlayerNameCache names;
+    private final ParkourSigns signs;
     private final MyParkourPluginConfiguration pluginConfig;
 
     private @Nullable MyParkourPaths paths;
@@ -75,6 +77,12 @@ public final class MyParkour extends JavaPlugin {
             .registerTypeAdapter(ImmutableLocation.class, ImmutableLocationJsonCodec.INSTANCE)
             .registerTypeAdapter(LeaderboardTimes.class, LeaderboardTimesJsonCodec.INSTANCE)
             .registerTypeAdapter(LocalDateTime.class, LocalDateTimeJsonCodec.INSTANCE)
+            .registerTypeAdapter(ParkourSign.class, ParkourSignsJsonCodecs.GENERIC)
+            .registerTypeAdapter(ParkourCourseTimesSign.class, ParkourSignsJsonCodecs.COURSE_TIMES)
+            .registerTypeAdapter(ParkourExitSign.class, ParkourSignsJsonCodecs.EXIT)
+            .registerTypeAdapter(ParkourRunSign.class, ParkourSignsJsonCodecs.RUN)
+            .registerTypeAdapter(ParkourSelfTimesSign.class, ParkourSignsJsonCodecs.SELF_TIMES)
+            .registerTypeAdapter(ParkourSigns.SaveData.class, ParkourSignsSaveDataJsonCodec.INSTANCE)
             .registerTypeAdapter(StartGameMode.class, StartGameModeJsonCodec.INSTANCE)
             .registerTypeAdapter(UUID.class, UUIDJsonCodec.INSTANCE)
             .create();
@@ -84,6 +92,7 @@ public final class MyParkour extends JavaPlugin {
         runs = new CourseRuns();
         leaderboards = new Leaderboards();
         names = new PlayerNameCache();
+        signs = new ParkourSigns();
         pluginConfig = new MyParkourPluginConfiguration();
         paths = null;
         conn = null;
@@ -128,6 +137,10 @@ public final class MyParkour extends JavaPlugin {
         return names;
     }
 
+    public ParkourSigns getSigns() {
+        return signs;
+    }
+
     public MyParkourPluginConfiguration getPluginConfig() {
         return pluginConfig;
     }
@@ -138,7 +151,8 @@ public final class MyParkour extends JavaPlugin {
             //noinspection DataFlowIssue
             translationStore.load(paths.messagesFile());
             courses.load(paths.coursesFile());
-            edits.save(paths.editsFile());
+            edits.load(paths.editsFile());
+            signs.load(paths.signsFile());
             names.reload();
             getLogger().info("Finished reloading messages, courses, edits, and leaderboards");
         } catch (IOException e) {
@@ -188,6 +202,7 @@ public final class MyParkour extends JavaPlugin {
                 //noinspection DataFlowIssue
                 edits.save(paths.editsFile());
                 courses.save(paths.coursesFile());
+                signs.save(paths.signsFile());
                 names.save();
                 getLogger().info("Finished saving edits, leaderboards, and courses");
             } catch (IOException e) {
