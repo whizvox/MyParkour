@@ -3,6 +3,7 @@ package me.whizvox.myparkour.course.edit;
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import me.whizvox.myparkour.course.*;
+import me.whizvox.myparkour.util.DefaultBoolean;
 import me.whizvox.myparkour.util.ImmutableLocation;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +25,7 @@ public class EditableCourse {
     private StartGameMode startGameMode;
     private ExitGameMode exitGameMode;
     private int minY;
+    private DefaultBoolean clearInventory;
     private boolean open;
 
     public EditableCourse() {
@@ -37,6 +39,7 @@ public class EditableCourse {
         startGameMode = StartGameMode.DEFAULT;
         exitGameMode = ExitGameMode.DEFAULT;
         minY = -64;
+        clearInventory = DefaultBoolean.DEFAULT;
         open = false;
     }
 
@@ -53,6 +56,7 @@ public class EditableCourse {
         startGameMode = orig.startGameMode();
         exitGameMode = orig.exitGameMode();
         minY = orig.minY();
+        clearInventory = orig.clearInventory();
         open = orig.open();
     }
 
@@ -98,6 +102,10 @@ public class EditableCourse {
 
     public int getMinY() {
         return minY;
+    }
+
+    public DefaultBoolean shouldClearInventory() {
+        return clearInventory;
     }
 
     public boolean isOpen() {
@@ -165,6 +173,10 @@ public class EditableCourse {
         this.minY = minY;
     }
 
+    public void setClearInventory(DefaultBoolean clearInventory) {
+        this.clearInventory = clearInventory;
+    }
+
     public void setOpen(boolean open) {
         this.open = open;
     }
@@ -196,7 +208,7 @@ public class EditableCourse {
         if (result == ValidResult.VALID) {
             //noinspection DataFlowIssue
             return Pair.of(ValidResult.VALID, new Course(id, name, displayName, start, checkpoints, flags, exit,
-                startGameMode, exitGameMode, minY, open));
+                startGameMode, exitGameMode, minY, clearInventory, open));
         }
         return Pair.of(result, null);
     }

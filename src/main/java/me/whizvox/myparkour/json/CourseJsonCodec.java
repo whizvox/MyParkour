@@ -3,6 +3,7 @@ package me.whizvox.myparkour.json;
 import com.google.gson.*;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import me.whizvox.myparkour.course.*;
+import me.whizvox.myparkour.util.DefaultBoolean;
 import me.whizvox.myparkour.util.ImmutableLocation;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 
@@ -35,6 +36,7 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
             root.has("startGameMode") ? context.deserialize(root.get("startGameMode"), StartGameMode.class) : StartGameMode.DEFAULT,
             root.has("exitGameMode") ? context.deserialize(root.get("exitGameMode"), ExitGameMode.class) : ExitGameMode.DEFAULT,
             root.has("minY") ? root.get("minY").getAsInt() : -64,
+            root.has("clearInventory") ? DefaultBoolean.parse(root.get("clearInventory").getAsString()) : DefaultBoolean.DEFAULT,
             root.get("open").getAsBoolean()
         );
     }
@@ -56,6 +58,7 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
         root.add("startGameMode", context.serialize(src.startGameMode()));
         root.add("exitGameMode", context.serialize(src.exitGameMode()));
         root.addProperty("minY", src.minY());
+        root.addProperty("clearInventory", src.clearInventory().repr);
         root.addProperty("open", src.open());
         return root;
     }

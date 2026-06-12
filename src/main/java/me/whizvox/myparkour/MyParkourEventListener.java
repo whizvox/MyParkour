@@ -6,6 +6,7 @@ import me.whizvox.myparkour.util.BlockLocation;
 import me.whizvox.myparkour.util.CommandUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Material;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
@@ -18,10 +19,13 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.permissions.Permission;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @NotNullByDefault
@@ -54,7 +58,19 @@ public class MyParkourEventListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        MyParkour.inst().getNames().update(event.getPlayer());
+        Player player = event.getPlayer();
+        MyParkour.inst().getNames().update(player);
+        MyParkour.inst().getRuns().getStoredRun(player).ifPresent(state -> {
+            MyParkour.inst().getRuns().stop(player, false);
+            player.teleportAsync(state.exit().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
+                player.setGameMode(state.gameMode());
+                player.getInventory().clear();
+                state.inventory().forEach(item -> player.getInventory().setItem(item.slot(), item.item()));
+                if (!success) {
+                    player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+                }
+            });
+        });
     }
 
     @EventHandler
@@ -115,13 +131,48 @@ public class MyParkourEventListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockInteract(PlayerInteractEvent event) {
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.hasBlock() && (event.getClickedBlock().getState() instanceof Sign || event.getClickedBlock().getState() instanceof WallSign)) {
             BlockLocation loc = new BlockLocation(event.getClickedBlock().getLocation());
             MyParkour.inst().getSigns().get(loc).ifPresent(sign -> {
                 event.setCancelled(true);
-                sign.action(event.getPlayer());
+                sign.action(player);
             });
+        }
+        if ((event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) && event.hasItem()) {
+            MyParkour.inst().getRuns().getRun(player).ifPresent(run -> {
+                //noinspection DataFlowIssue
+                if (event.getItem().getType() == Material.STICK) {
+                    run.teleportToLastCheckpoint();
+                } else if (event.getItem().getType() == Material.CLOCK) {
+                    player.teleportAsync(run.getCourse().start().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
+                        if (success) {
+                            run.restart();
+                        } else {
+                            player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.start"));
+                        }
+                    });
+                } else if (event.getItem().getType() == Material.OAK_SAPLING) {
+                    MyParkour.inst().getRuns().stop(player, false);
+                    player.teleportAsync(run.getCourse().exit().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
+                        if (success) {
+                            player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", run.getCourse().displayName())));
+                        } else {
+                            player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+                        }
+                        run.handleExit();
+                    });
+                }
+            });
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDisconnect(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (MyParkour.inst().getRuns().stop(player, true).isPresent()) {
+            MyParkour.inst().getLogger().info("Marked player %s (%s) as being disconnected from course".formatted(player.getName(), player.getUniqueId()));
         }
     }
 

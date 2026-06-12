@@ -14,14 +14,13 @@ import me.whizvox.myparkour.course.leaderboard.CourseTime;
 import me.whizvox.myparkour.course.leaderboard.LeaderboardTimes;
 import me.whizvox.myparkour.course.leaderboard.Leaderboards;
 import me.whizvox.myparkour.course.run.CourseRuns;
+import me.whizvox.myparkour.course.run.StoredRun;
 import me.whizvox.myparkour.json.*;
 import me.whizvox.myparkour.sign.*;
-import me.whizvox.myparkour.util.BlockLocation;
-import me.whizvox.myparkour.util.ImmutableBoundingBox;
-import me.whizvox.myparkour.util.ImmutableLocation;
-import me.whizvox.myparkour.util.PlayerNameCache;
+import me.whizvox.myparkour.util.*;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -152,6 +151,7 @@ public final class MyParkour extends JavaPlugin {
             translationStore.load(paths.messagesFile());
             courses.load(paths.coursesFile());
             edits.load(paths.editsFile());
+            runs.load(paths.runsPath());
             signs.load(paths.signsFile());
             names.reload();
             getLogger().info("Finished reloading messages, courses, edits, and leaderboards");
@@ -169,6 +169,9 @@ public final class MyParkour extends JavaPlugin {
     @Override
     public void onEnable() {
         enabledSuccessfully = false;
+        ConfigurationSerialization.registerClass(SlottedItem.class);
+        ConfigurationSerialization.registerClass(ImmutableLocation.class);
+        ConfigurationSerialization.registerClass(StoredRun.class);
         paths = new MyParkourPaths(getDataPath());
         paths.mkdir();
         try {
@@ -202,6 +205,7 @@ public final class MyParkour extends JavaPlugin {
                 //noinspection DataFlowIssue
                 edits.save(paths.editsFile());
                 courses.save(paths.coursesFile());
+                runs.save(paths.runsPath());
                 signs.save(paths.signsFile());
                 names.save();
                 getLogger().info("Finished saving edits, leaderboards, and courses");

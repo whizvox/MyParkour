@@ -6,7 +6,9 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.minimessage.translation.Argument;
+import net.kyori.adventure.translation.GlobalTranslator;
 
+import java.util.Locale;
 import java.util.Map;
 
 public class Messages {
@@ -39,6 +41,10 @@ public class Messages {
 
     public static TranslatableComponent translate(String key) {
         return Component.translatable(key, Argument.component("prefix", Component.translatable(KEY_PREFIX)));
+    }
+
+    public static Component translateImmediately(String key) {
+        return GlobalTranslator.translator().translate(translate(key), Locale.ENGLISH);
     }
 
     public static Map<String, String> getDefaultMessages() {
@@ -95,6 +101,12 @@ public class Messages {
         m.put("myparkour.run.finish.firstTime", "<aqua>You beat <course> for the first time in <yellow><time></yellow>!</aqua>");
         m.put("myparkour.run.finish.personalBest", "<aqua>You achieved a new personal best on <course> in <yellow><time></yellow>!</aqua>");
         m.put("myparkour.run.finish.noChange", "<green>You beat <course> in <yellow><time></yellow>.</green>");
+        m.put("myparkour.run.item.back.name", "<gold><bold>Go Back</bold></gold>");
+        m.put("myparkour.run.item.back.lore", "<gray><italic>Right-click while holding this item to go back to the last checkpoint.</italic></gray>");
+        m.put("myparkour.run.item.restart.name", "<gold><bold>Restart</bold></gold>");
+        m.put("myparkour.run.item.restart.lore", "<gray><italic>Right-click while holding this item to restart the course.</italic></gray>");
+        m.put("myparkour.run.item.exit.name", "<gold><bold>Exit</bold></gold>");
+        m.put("myparkour.run.item.exit.lore", "<gray><italic>Right-click while holding this item to exit the course.</italic></gray>");
         m.put("myparkour.run.error.alreadyRunning", "<red>You are already running in a course.</red>");
         m.put("myparkour.run.error.notRunning", "<red>You are not currently running in a course.</red>");
         m.put("myparkour.run.error.notOpen", "<red>That course is currently not open.</red>");

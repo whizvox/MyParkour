@@ -9,8 +9,9 @@ import java.util.Optional;
 public class MyParkourPluginConfiguration extends DefaultConfiguration {
 
     private static final String
-        KEY_DEFAULT_START_GAMEMODE = "course.defaultGamemode.start",
-        KEY_DEFAULT_EXIT_GAMEMODE = "course.defaultGamemode.exit";
+        KEY_DEFAULT_START_GAMEMODE = "course.default.gamemode.start",
+        KEY_DEFAULT_EXIT_GAMEMODE = "course.default.gamemode.exit",
+        KEY_DEFAULT_CLEAR_INVENTORY = "course.default.clearInventory";
 
     public Optional<StartGameMode> getDefaultStartGameMode() {
         return Optional.ofNullable(StartGameMode.MAP.get(getConfiguration().getString(KEY_DEFAULT_START_GAMEMODE)));
@@ -20,12 +21,20 @@ public class MyParkourPluginConfiguration extends DefaultConfiguration {
         return Optional.ofNullable(ExitGameMode.MAP.get(getConfiguration().getString(KEY_DEFAULT_EXIT_GAMEMODE)));
     }
 
+    public boolean getDefaultClearInventory() {
+        return getConfiguration().getBoolean(KEY_DEFAULT_CLEAR_INVENTORY, true);
+    }
+
     public void setDefaultStartGameMode(StartGameMode gm) {
         getConfiguration().set(KEY_DEFAULT_START_GAMEMODE, gm.repr);
     }
 
     public void setDefaultExitGameMode(ExitGameMode gm) {
         getConfiguration().set(KEY_DEFAULT_EXIT_GAMEMODE, gm.repr);
+    }
+
+    public void setDefaultClearInventory(boolean clearInventory) {
+        getConfiguration().set(KEY_DEFAULT_CLEAR_INVENTORY, clearInventory);
     }
 
     @Override
@@ -42,6 +51,11 @@ public class MyParkourPluginConfiguration extends DefaultConfiguration {
             "If this is 'previous', then the player's previous gamemode before they began running the course will be applied.",
             "If this is 'none', then the player's gamemode is not changed when they exit a course.",
             "Note that a course may overwrite this behavior."
+        );
+        set(KEY_DEFAULT_CLEAR_INVENTORY, true,
+            "Whether to, by default, clear a player's inventory when they start a course.",
+            "Setting this to true will also give the player a selection of interactable items.",
+            "The contents of the player's inventory will be returned to them once they exit the course."
         );
     }
 
