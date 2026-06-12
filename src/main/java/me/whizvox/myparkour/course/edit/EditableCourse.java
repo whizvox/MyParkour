@@ -23,6 +23,7 @@ public class EditableCourse {
     private @Nullable ImmutableLocation exit;
     private StartGameMode startGameMode;
     private ExitGameMode exitGameMode;
+    private int minY;
     private boolean open;
 
     public EditableCourse() {
@@ -35,6 +36,7 @@ public class EditableCourse {
         exit = null;
         startGameMode = StartGameMode.DEFAULT;
         exitGameMode = ExitGameMode.DEFAULT;
+        minY = -64;
         open = false;
     }
 
@@ -50,6 +52,7 @@ public class EditableCourse {
         exit = orig.exit();
         startGameMode = orig.startGameMode();
         exitGameMode = orig.exitGameMode();
+        minY = orig.minY();
         open = orig.open();
     }
 
@@ -91,6 +94,10 @@ public class EditableCourse {
 
     public ExitGameMode getExitGameMode() {
         return exitGameMode;
+    }
+
+    public int getMinY() {
+        return minY;
     }
 
     public boolean isOpen() {
@@ -154,6 +161,10 @@ public class EditableCourse {
         this.exitGameMode = exitGameMode;
     }
 
+    public void setMinY(int minY) {
+        this.minY = minY;
+    }
+
     public void setOpen(boolean open) {
         this.open = open;
     }
@@ -185,7 +196,7 @@ public class EditableCourse {
         if (result == ValidResult.VALID) {
             //noinspection DataFlowIssue
             return Pair.of(ValidResult.VALID, new Course(id, name, displayName, start, checkpoints, flags, exit,
-                startGameMode, exitGameMode, open));
+                startGameMode, exitGameMode, minY, open));
         }
         return Pair.of(result, null);
     }

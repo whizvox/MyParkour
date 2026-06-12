@@ -225,6 +225,12 @@ public class EditCourseCommand {
         return SINGLE_SUCCESS;
     }
 
+    private static int setMinY(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        int minY = IntegerArgumentType.getInteger(context, "minY");
+        setProperty(context, minY, EditableCourse::setMinY, (sender, i) -> sender.sendMessage(Messages.translate("myparkour.edit.set.minY", Map.of("min_y", i))));
+        return SINGLE_SUCCESS;
+    }
+
     private static int listCheckpoints(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         actOnPlayerCourse(context, course -> {
             if (course.getCheckpoints().isEmpty()) {
@@ -521,6 +527,11 @@ public class EditCourseCommand {
                 .then(Commands.literal("exitgamemode")
                     .then(Commands.argument("gamemode", ExitGameModeArgumentType.exitGameMode())
                         .executes(EditCourseCommand::setExitGameMode)
+                    )
+                )
+                .then(Commands.literal("miny")
+                    .then(Commands.argument("minY", IntegerArgumentType.integer())
+                        .executes(EditCourseCommand::setMinY)
                     )
                 )
             )

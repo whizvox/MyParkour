@@ -142,7 +142,12 @@ public class CourseRun {
             });
             if (shouldReset) {
                 teleportToLastCheckpoint();
+                return;
             }
+        }
+        if (player.getY() < course.minY()) {
+            teleportToLastCheckpoint();
+            return;
         }
         if (currentCheckpoint.isCollidingWith(player)) {
             if (currentCheckpoint instanceof SplitCheckpoint split) {

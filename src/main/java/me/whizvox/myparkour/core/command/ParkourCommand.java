@@ -59,6 +59,15 @@ public class ParkourCommand {
         return SINGLE_SUCCESS;
     }
 
+    private static int teleportToLastCheckpoint(CommandContext<CommandSourceStack> context) {
+        Player player = (Player) context.getSource().getSender();
+        MyParkour.inst().getRuns().getRun(player).ifPresentOrElse(
+            CourseRun::teleportToLastCheckpoint,
+            () -> player.sendMessage(Messages.translate("myparkour.run.error.notRunning"))
+        );
+        return SINGLE_SUCCESS;
+    }
+
     private static int restart(CommandContext<CommandSourceStack> context) {
         Player player = (Player) context.getSource().getSender();
         MyParkour.inst().getRuns().getRun(player).ifPresentOrElse(
@@ -92,6 +101,10 @@ public class ParkourCommand {
                     .then(Commands.argument("course", CourseArgumentType.course())
                         .executes(ParkourCommand::run)
                     )
+                )
+                .then(Commands.literal("back")
+                    .requires(source -> CommandUtils.playerHasPermission(source, PERMISSION_RUN))
+                    .executes(ParkourCommand::teleportToLastCheckpoint)
                 )
                 .then(Commands.literal("restart")
                     .requires(source -> CommandUtils.playerHasPermission(source, PERMISSION_RUN))

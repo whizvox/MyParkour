@@ -56,6 +56,7 @@ public class Messages {
         m.put("myparkour.edit.set.exit", "<green>Course exit location has been set to <location>.</green>");
         m.put("myparkour.edit.set.startGameMode", "Course start gamemode has been set to <yellow><gamemode></yellow>.");
         m.put("myparkour.edit.set.exitGameMode", "Course exit gamemode has been set to <yellow><gamemode></yellow>.");
+        m.put("myparkour.edit.set.minY", "Minimum Y-coordinate has been set to <yellow><min_y></yellow>.");
         m.put("myparkour.edit.checkpoint.add", "<green>Added new checkpoint <red>#<index></red> <checkpoint>.</green>");
         m.put("myparkour.edit.checkpoint.list.none", "<gray>No checkpoints found.</gray>");
         m.put("myparkour.edit.checkpoint.list.all", "<aqua>Checkpoints for <yellow><course_name></yellow></aqua>: <checkpoints>");

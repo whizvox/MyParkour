@@ -34,6 +34,7 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
             context.deserialize(root.get("exit"), ImmutableLocation.class),
             root.has("startGameMode") ? context.deserialize(root.get("startGameMode"), StartGameMode.class) : StartGameMode.DEFAULT,
             root.has("exitGameMode") ? context.deserialize(root.get("exitGameMode"), ExitGameMode.class) : ExitGameMode.DEFAULT,
+            root.has("minY") ? root.get("minY").getAsInt() : -64,
             root.get("open").getAsBoolean()
         );
     }
@@ -54,6 +55,7 @@ public class CourseJsonCodec implements JsonSerializer<Course>, JsonDeserializer
         root.add("exit", context.serialize(src.exit()));
         root.add("startGameMode", context.serialize(src.startGameMode()));
         root.add("exitGameMode", context.serialize(src.exitGameMode()));
+        root.addProperty("minY", src.minY());
         root.addProperty("open", src.open());
         return root;
     }

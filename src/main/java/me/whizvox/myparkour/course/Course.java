@@ -11,11 +11,11 @@ import java.util.Set;
 @NotNullByDefault
 public record Course(int id, String name, Component displayName, ImmutableLocation start, List<Checkpoint> checkpoints,
                      Set<CourseFlag> flags, ImmutableLocation exit, StartGameMode startGameMode,
-                     ExitGameMode exitGameMode, boolean open) {
+                     ExitGameMode exitGameMode, int minY, boolean open) {
 
     public Course(int id, String name, Component displayName, ImmutableLocation start, List<Checkpoint> checkpoints,
                   Set<CourseFlag> flags, ImmutableLocation exit, StartGameMode startGameMode, ExitGameMode exitGameMode,
-                  boolean open) {
+                  int minY, boolean open) {
         this.id = id;
         this.name = name;
         this.displayName = displayName;
@@ -25,6 +25,7 @@ public record Course(int id, String name, Component displayName, ImmutableLocati
         this.exit = exit;
         this.startGameMode = startGameMode;
         this.exitGameMode = exitGameMode;
+        this.minY = minY;
         this.open = open;
     }
 
