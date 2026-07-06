@@ -9,7 +9,6 @@ import me.whizvox.myparkour.course.Course;
 import me.whizvox.myparkour.course.Courses;
 import me.whizvox.myparkour.util.Persistent;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -81,26 +80,25 @@ public class CourseEdits implements Persistent<List<CourseEdits.Entry>> {
      * Remove a course that's currently being edited from the list of edited courses.
      * @param player The player who's editing the course
      * @param saveChanges Whether to save the course. Setting this to <code>false</code> will discard any edits.
-     * @return A {@link me.whizvox.myparkour.course.Courses.EditResult}, or <code>null</code> if the player was not
-     * editing a course.
+     * @return A {@link me.whizvox.myparkour.course.edit.CourseEditResult}
      */
-    public @Nullable Courses.EditResult stopEditingCourse(Player player, boolean saveChanges) {
+    public CourseEditResult stopEditingCourse(Player player, boolean saveChanges) {
         EditableCourse editableCourse = courseEdits.get(player.getUniqueId());
         if (editableCourse != null) {
             if (saveChanges) {
-                Courses.EditResult result;
+                CourseEditResult result;
                 if (editableCourse.isNew()) {
                     result = courses.add(editableCourse);
                 } else {
                     result = courses.edit(editableCourse);
                 }
-                if (result != Courses.EditResult.SUCCESS) {
+                if (result.type() != CourseEditResult.Type.SUCCESS) {
                     return result;
                 }
             }
             courseEditIds.remove(editableCourse.getId());
             courseEdits.remove(player.getUniqueId());
-            return Courses.EditResult.SUCCESS;
+            return CourseEditResult.success();
         }
         return null;
     }

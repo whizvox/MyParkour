@@ -18,6 +18,7 @@ import me.whizvox.myparkour.course.run.StoredRun;
 import me.whizvox.myparkour.json.*;
 import me.whizvox.myparkour.sign.*;
 import me.whizvox.myparkour.util.*;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -84,6 +85,7 @@ public final class MyParkour extends JavaPlugin {
             .registerTypeAdapter(ParkourSigns.SaveData.class, ParkourSignsSaveDataJsonCodec.INSTANCE)
             .registerTypeAdapter(StartGameMode.class, StartGameModeJsonCodec.INSTANCE)
             .registerTypeAdapter(UUID.class, UUIDJsonCodec.INSTANCE)
+            .registerTypeAdapter(Component.class, new ComponentJsonCodec())
             .create();
         translationStore = new SimpleTranslationStore();
         courses = new Courses();

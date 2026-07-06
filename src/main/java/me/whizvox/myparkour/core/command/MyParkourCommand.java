@@ -20,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
-import static me.whizvox.myparkour.Messages.key;
 import static me.whizvox.myparkour.db.tables.Times.TIMES;
 import static me.whizvox.myparkour.util.CommandUtils.createPermission;
 
@@ -31,18 +30,14 @@ public class MyParkourCommand {
         PERMISSION_RELOAD = createPermission("reload"),
         PERMISSION_DEBUG = createPermission("debug");
 
-    public static final String
-        KEY_VERSION = key("command.version"),
-        KEY_RELOAD = key("command.reload");
-
     private static int version(CommandContext<CommandSourceStack> context) {
-        context.getSource().getSender().sendMessage(Messages.translate(KEY_VERSION, Map.of("version", MyParkour.inst().getPluginMeta().getVersion())));
+        context.getSource().getSender().sendMessage(Messages.translate(Messages.KEY_COMMAND_VERSION, Map.of("version", MyParkour.inst().getPluginMeta().getVersion())));
         return SINGLE_SUCCESS;
     }
 
     private static int reload(CommandContext<CommandSourceStack> context) {
         MyParkour.inst().reload();
-        context.getSource().getSender().sendMessage(Messages.translate(KEY_RELOAD));
+        context.getSource().getSender().sendMessage(Messages.translate(Messages.KEY_COMMAND_RELOAD));
         return SINGLE_SUCCESS;
     }
 
@@ -55,7 +50,7 @@ public class MyParkourCommand {
             MyParkour.inst().getNames().update(fakePlayerId, fakePlayerName, Component.text(fakePlayerName), LocalDateTime.now());
             MyParkour.inst().getLeaderboards().log(fakePlayerId, course.id(), rand.nextInt(5, 10000));
         }
-        context.getSource().getSender().sendMessage(Messages.translate("myparkour.debug.addFakeTimes", Map.of("course", course.name())));
+        context.getSource().getSender().sendMessage(Messages.translate(Messages.KEY_DEBUG_ADD_FAKE_TIMES, Map.of("course", course.name())));
         return SINGLE_SUCCESS;
     }
 
@@ -79,7 +74,7 @@ public class MyParkourCommand {
             )
         );
         coursesToReorder.forEach(courseId -> MyParkour.inst().getLeaderboards().reorderCourseRanks(courseId));
-        context.getSource().getSender().sendMessage(Messages.translate("myparkour.debug.clear"));
+        context.getSource().getSender().sendMessage(Messages.translate(Messages.KEY_DEBUG_CLEAR));
         return SINGLE_SUCCESS;
     }
 

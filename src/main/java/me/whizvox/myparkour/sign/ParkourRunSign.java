@@ -11,7 +11,7 @@ public record ParkourRunSign(Course course) implements ParkourSign {
         if (course.open()) {
             player.performCommand("myparkour:parkour run " + course.name());
         } else {
-            player.sendMessage(Messages.translate("myparkour.run.error.notOpen"));
+            player.sendMessage(Messages.translate(Messages.KEY_RUN_START_CLOSED));
         }
     }
 

@@ -67,7 +67,7 @@ public class MyParkourEventListener implements Listener {
                 player.getInventory().clear();
                 state.inventory().forEach(item -> player.getInventory().setItem(item.slot(), item.item()));
                 if (!success) {
-                    player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+                    player.sendMessage(Messages.translate(Messages.KEY_RUN_EXIT_TELEPORT_FAILED));
                 }
             });
         });
@@ -79,7 +79,7 @@ public class MyParkourEventListener implements Listener {
             BlockLocation location = new BlockLocation(event.getBlock().getLocation());
             if (MyParkour.inst().getSigns().exists(location) && event.getPlayer().hasPermission(PERMISSION_SIGN_PLACE)) {
                 MyParkour.inst().getSigns().delete(location);
-                event.getPlayer().sendMessage(Messages.translate("myparkour.sign.break"));
+                event.getPlayer().sendMessage(Messages.translate(Messages.KEY_SIGN_BREAK));
             }
         }
     }
@@ -122,7 +122,7 @@ public class MyParkourEventListener implements Listener {
                                 MyParkour.inst().getSigns().delete(loc);
                             }
                             MyParkour.inst().getSigns().register(loc, pSign);
-                            event.getPlayer().sendMessage(Messages.translate("myparkour.sign." + (shouldReplace ? "replace" : "place")));
+                            event.getPlayer().sendMessage(Messages.translate(shouldReplace ? Messages.KEY_SIGN_REPLACE : Messages.KEY_SIGN_PLACE));
                         });
                     }
                 }
@@ -150,16 +150,16 @@ public class MyParkourEventListener implements Listener {
                         if (success) {
                             run.restart();
                         } else {
-                            player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.start"));
+                            player.sendMessage(Messages.translate(Messages.KEY_RUN_START_TELEPORT_FAILED));
                         }
                     });
                 } else if (event.getItem().getType() == Material.OAK_SAPLING) {
                     MyParkour.inst().getRuns().stop(player, false);
                     player.teleportAsync(run.getCourse().exit().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
                         if (success) {
-                            player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", run.getCourse().displayName())));
+                            player.sendMessage(Messages.translate(Messages.KEY_RUN_EXIT_SUCCESS, Map.of("course", run.getCourse().displayName())));
                         } else {
-                            player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+                            player.sendMessage(Messages.translate(Messages.KEY_RUN_EXIT_TELEPORT_FAILED));
                         }
                         run.handleExit();
                     });

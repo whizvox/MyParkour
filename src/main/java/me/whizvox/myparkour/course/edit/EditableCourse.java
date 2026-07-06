@@ -1,6 +1,5 @@
 package me.whizvox.myparkour.course.edit;
 
-import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import me.whizvox.myparkour.course.*;
 import me.whizvox.myparkour.util.DefaultBoolean;
@@ -16,7 +15,7 @@ import java.util.Set;
 public class EditableCourse {
 
     private int id;
-    private @Nullable String name;
+    private String name;
     private @Nullable Component displayName;
     private final List<Checkpoint> checkpoints;
     private @Nullable ImmutableLocation start;
@@ -68,7 +67,7 @@ public class EditableCourse {
         return id;
     }
 
-    public @Nullable String getName() {
+    public String getName() {
         return name;
     }
 
@@ -182,10 +181,7 @@ public class EditableCourse {
     }
 
     public ValidResult checkValid() {
-        if (isNew()) {
-            return ValidResult.MISSING_ID;
-        }
-        if (name == null || name.isBlank()) {
+        if (name.isBlank()) {
             return ValidResult.MISSING_NAME;
         }
         if (displayName == null) {
@@ -203,19 +199,13 @@ public class EditableCourse {
         return ValidResult.VALID;
     }
 
-    public Pair<ValidResult, Course> toCourse() {
-        ValidResult result = checkValid();
-        if (result == ValidResult.VALID) {
-            //noinspection DataFlowIssue
-            return Pair.of(ValidResult.VALID, new Course(id, name, displayName, start, checkpoints, flags, exit,
-                startGameMode, exitGameMode, minY, clearInventory, open));
-        }
-        return Pair.of(result, null);
+    public Course toCourse() {
+        //noinspection DataFlowIssue
+        return new Course(id, name, displayName, start, checkpoints, flags, exit, startGameMode, exitGameMode, minY, clearInventory, open);
     }
 
     public enum ValidResult {
         VALID,
-        MISSING_ID,
         MISSING_NAME,
         MISSING_DISPLAY_NAME,
         NO_CHECKPOINTS,

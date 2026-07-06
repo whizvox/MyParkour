@@ -47,7 +47,7 @@ public class TimesCommand {
     private static Component getTimeInfo(CourseTime time) {
         Course course = MyParkour.inst().getCourses().get(time.courseId())
             .orElseThrow(() -> new RuntimeException("Could not retrieve course from course time: time=%d, course=%d".formatted(time.id(), time.courseId())));
-        return Messages.translate("myparkour.times.info", Map.of(
+        return Messages.translate(Messages.KEY_TIMES_INFO, Map.of(
             "id", time.id(),
             "player_name", MyParkour.inst().getNames().getDisplayName(time.playerId()),
             "player_id", time.playerId(),
@@ -66,9 +66,9 @@ public class TimesCommand {
         Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setCourseId(course.id()).setAscending(true).setPage(page - 1));
         if (!times.items().isEmpty()) {
             boolean canSeeInfo = sender.hasPermission(PERMISSION_TIME_INFO);
-            Component comp = Messages.translate("myparkour.times.course.header", Map.of("course", course.displayName(), "current_page", times.page() + 1, "total_pages", times.totalPages()));
+            Component comp = Messages.translate(Messages.KEY_TIMES_COURSE_HEADER, Map.of("course", course.displayName(), "current_page", times.page() + 1, "total_pages", times.totalPages()));
             for (CourseTime item : times.items()) {
-                Component basicInfo = Messages.translate("myparkour.times.course.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MyParkour.inst().getNames().getDisplayName(item.playerId())));
+                Component basicInfo = Messages.translate(Messages.KEY_TIMES_COURSE_ENTRY, Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "player", MyParkour.inst().getNames().getDisplayName(item.playerId())));
                 if (canSeeInfo) {
                     comp = comp.appendNewline().append(basicInfo.hoverEvent(getTimeInfo(item)));
                 } else {
@@ -77,7 +77,7 @@ public class TimesCommand {
             }
             sender.sendMessage(comp);
         } else {
-            sender.sendMessage(Messages.translate("myparkour.times.course.none", Map.of("course", course.displayName())));
+            sender.sendMessage(Messages.translate(Messages.KEY_TIMES_COURSE_NONE, Map.of("course", course.displayName())));
         }
         return SINGLE_SUCCESS;
     }
@@ -86,12 +86,12 @@ public class TimesCommand {
         Page<CourseTime> times = MyParkour.inst().getLeaderboards().getTimes(new LeaderboardQuery().setPlayerId(player.getUniqueId()).setAscending(true).setPage(page - 1));
         if (!times.items().isEmpty()) {
             boolean canSeeInfo = sender.hasPermission(PERMISSION_TIME_INFO);
-            Component comp = Messages.translate("myparkour.times.player.header", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "current_page", times.page() + 1, "total_pages", times.totalPages()));
+            Component comp = Messages.translate(Messages.KEY_TIMES_PLAYER_HEADER, Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "current_page", times.page() + 1, "total_pages", times.totalPages()));
             for (CourseTime item : times.items()) {
                 Component courseName = MyParkour.inst().getCourses().get(item.courseId())
                     .map(Course::displayName)
                     .orElse(Component.text("???", NamedTextColor.DARK_RED));
-                Component basicInfo = Messages.translate("myparkour.times.player.entry", Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "course", courseName));
+                Component basicInfo = Messages.translate(Messages.KEY_TIMES_PLAYER_ENTRY, Map.of("rank", item.rank(), "time", StringUtils.formatTime(item.time()), "course", courseName));
                 if (canSeeInfo) {
                     comp = comp.appendNewline().append(basicInfo.hoverEvent(getTimeInfo(item)));
                 } else {
@@ -100,7 +100,7 @@ public class TimesCommand {
             }
             sender.sendMessage(comp);
         } else {
-            sender.sendMessage(Messages.translate("myparkour.times.player.none", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()))));
+            sender.sendMessage(Messages.translate(Messages.KEY_TIMES_PLAYER_NONE, Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()))));
         }
     }
 
@@ -130,7 +130,7 @@ public class TimesCommand {
         MyParkour.inst().getLeaderboards().getTime(player.getUniqueId(), course.id()).ifPresentOrElse(time -> {
             sender.sendMessage(getTimeInfo(time));
         }, () -> {
-            sender.sendMessage(Messages.translate("myparkour.times.lookup.none", Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "course", course.displayName())));
+            sender.sendMessage(Messages.translate(Messages.KEY_TIMES_LOOKUP_NONE, Map.of("player", MyParkour.inst().getNames().getDisplayName(player.getUniqueId()), "course", course.displayName())));
         });
         return SINGLE_SUCCESS;
     }
@@ -138,14 +138,14 @@ public class TimesCommand {
     private static int deleteTime(CommandContext<CommandSourceStack> context) {
         CourseTime time = CourseTimeArgumentType.getTime(context, "timeId");
         MyParkour.inst().getLeaderboards().delete(time.id());
-        context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.delete.one"));
+        context.getSource().getSender().sendMessage(Messages.translate(Messages.KEY_TIMES_DELETE_ONE));
         return SINGLE_SUCCESS;
     }
 
     private static int deleteTimesForCourse(CommandContext<CommandSourceStack> context) {
         Course course = CourseArgumentType.getCourse(context, "course");
         boolean success = MyParkour.inst().getLeaderboards().deleteByCourse(course.id());
-        context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.clear.course" + (success ? "" : ".none"), Map.of("course", course.displayName())));
+        context.getSource().getSender().sendMessage(Messages.translate(success ? Messages.KEY_TIMES_DELETE_COURSE : Messages.KEY_TIMES_DELETE_COURSE_NONE, Map.of("course", course.displayName())));
         return SINGLE_SUCCESS;
     }
 
@@ -154,13 +154,13 @@ public class TimesCommand {
         Player player = resolver.resolve(context.getSource()).getFirst();
         CommandSender sender = context.getSource().getSender();
         boolean success = MyParkour.inst().getLeaderboards().deleteByPlayer(player.getUniqueId());
-        sender.sendMessage(Messages.translate("myparkour.times.clear.player" + (success ? "" : ".none"), Map.of("player", player.name())));
+        sender.sendMessage(Messages.translate(success ? Messages.KEY_TIMES_DELETE_PLAYER : Messages.KEY_TIMES_DELETE_PLAYER_NONE, Map.of("player", player.name())));
         return SINGLE_SUCCESS;
     }
 
     private static int deleteAllCourseTimes(CommandContext<CommandSourceStack> context) {
         boolean success = MyParkour.inst().getLeaderboards().deleteAll();
-        context.getSource().getSender().sendMessage(Messages.translate("myparkour.times.clear.all" + (success ? "" : ".none")));
+        context.getSource().getSender().sendMessage(Messages.translate(success ? Messages.KEY_TIMES_DELETE_ALL : Messages.KEY_TIMES_DELETE_ALL_NONE));
         return SINGLE_SUCCESS;
     }
 

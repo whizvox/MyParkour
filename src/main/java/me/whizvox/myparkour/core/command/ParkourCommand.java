@@ -53,14 +53,14 @@ public class ParkourCommand {
                             inventory = player.getInventory().getContents();
                             player.getInventory().clear();
                             ItemStack backItem = new ItemStack(Material.STICK);
-                            backItem.setData(DataComponentTypes.ITEM_NAME, Messages.translateImmediately("myparkour.run.item.back.name"));
-                            backItem.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(Messages.translateImmediately("myparkour.run.item.back.lore")).build());
+                            backItem.setData(DataComponentTypes.ITEM_NAME, Messages.translateImmediately(Messages.KEY_ITEM_BACK_NAME));
+                            backItem.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(Messages.translateImmediately(Messages.KEY_ITEM_BACK_LORE)).build());
                             ItemStack restartItem = new ItemStack(Material.CLOCK);
-                            restartItem.setData(DataComponentTypes.ITEM_NAME, Messages.translateImmediately("myparkour.run.item.restart.name"));
-                            restartItem.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(Messages.translateImmediately("myparkour.run.item.restart.lore")).build());
+                            restartItem.setData(DataComponentTypes.ITEM_NAME, Messages.translateImmediately(Messages.KEY_ITEM_RESTART_NAME));
+                            restartItem.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(Messages.translateImmediately(Messages.KEY_ITEM_RESTART_LORE)).build());
                             ItemStack exitItem = new ItemStack(Material.OAK_SAPLING);
-                            exitItem.setData(DataComponentTypes.ITEM_NAME, Messages.translateImmediately("myparkour.run.item.exit.name"));
-                            exitItem.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(Messages.translateImmediately("myparkour.run.item.exit.lore")).build());
+                            exitItem.setData(DataComponentTypes.ITEM_NAME, Messages.translateImmediately(Messages.KEY_ITEM_EXIT_NAME));
+                            exitItem.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(Messages.translateImmediately(Messages.KEY_ITEM_EXIT_LORE)).build());
                             player.getInventory().setItem(0, backItem);
                             player.getInventory().setItem(4, restartItem);
                             player.getInventory().setItem(8, exitItem);
@@ -68,16 +68,16 @@ public class ParkourCommand {
                             inventory = new ItemStack[0];
                         }
                         MyParkour.inst().getRuns().startRun(player, course, gameMode, inventory);
-                        player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", course.displayName())), 2, 20, 10));
+                        player.showTitle(Title.title(Component.empty(), Messages.translate(Messages.KEY_RUN_START_SUCCESS, Map.of("course", course.displayName())), 2, 20, 10));
                     } else {
-                        player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.start"));
+                        player.sendMessage(Messages.translate(Messages.KEY_RUN_START_TELEPORT_FAILED));
                     }
                 });
             } else {
-                player.sendMessage(Messages.translate("myparkour.run.error.alreadyRunning"));
+                player.sendMessage(Messages.translate(Messages.KEY_RUN_START_ALREADY_RUNNING));
             }
         } else {
-            player.sendMessage(Messages.translate("myparkour.run.error.notOpen"));
+            player.sendMessage(Messages.translate(Messages.KEY_RUN_START_CLOSED));
         }
         return SINGLE_SUCCESS;
     }
@@ -86,7 +86,7 @@ public class ParkourCommand {
         Player player = (Player) context.getSource().getSender();
         MyParkour.inst().getRuns().getRun(player).ifPresentOrElse(
             CourseRun::teleportToLastCheckpoint,
-            () -> player.sendMessage(Messages.translate("myparkour.run.error.notRunning"))
+            () -> player.sendMessage(Messages.translate(Messages.KEY_RUN_GENERIC_NOT_RUNNING))
         );
         return SINGLE_SUCCESS;
     }
@@ -95,7 +95,7 @@ public class ParkourCommand {
         Player player = (Player) context.getSource().getSender();
         MyParkour.inst().getRuns().getRun(player).ifPresentOrElse(
             CourseRun::restart,
-            () -> player.sendMessage(Messages.translate("myparkour.run.error.notRunning"))
+            () -> player.sendMessage(Messages.translate(Messages.KEY_RUN_GENERIC_NOT_RUNNING))
         );
         return SINGLE_SUCCESS;
     }
@@ -106,13 +106,13 @@ public class ParkourCommand {
             player.teleportAsync(run.getCourse().exit().toLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN).thenAccept(success -> {
                 run.handleExit();
                 if (success) {
-                    player.sendMessage(Messages.translate("myparkour.run.exit", Map.of("course", run.getCourse().displayName())));
+                    player.sendMessage(Messages.translate(Messages.KEY_RUN_EXIT_SUCCESS, Map.of("course", run.getCourse().displayName())));
                 } else {
-                    player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+                    player.sendMessage(Messages.translate(Messages.KEY_RUN_EXIT_TELEPORT_FAILED));
                 }
             });
         }, () -> {
-            player.sendMessage(Messages.translate("myparkour.run.error.notRunning"));
+            player.sendMessage(Messages.translate(Messages.KEY_RUN_GENERIC_NOT_RUNNING));
         });
         return SINGLE_SUCCESS;
     }

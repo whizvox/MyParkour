@@ -61,9 +61,9 @@ public class CourseRun {
     private void onCheckpoint(CheckpointCause cause) {
         player.playSound(Sound.sound(Key.key("entity.experience_orb.pickup"), Sound.Source.UI, 1.0f, 1.0f), Sound.Emitter.self());
         if (cause == CheckpointCause.RESTART) {
-            player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.start", Map.of("course", course.displayName())), 2, 20, 2));
+            player.showTitle(Title.title(Component.empty(), Messages.translate(Messages.KEY_RUN_START_SUCCESS, Map.of("course", course.displayName())), 2, 20, 2));
         } else if (cause == CheckpointCause.NEXT) {
-            player.showTitle(Title.title(Component.empty(), Messages.translate("myparkour.run.nextCheckpoint", Map.of("checkpoint", currentCheckpointIndex, "total", course.checkpoints().size() - 1, "time", StringUtils.formatTime(getTime()))), 2, 20, 2));
+            player.showTitle(Title.title(Component.empty(), Messages.translate(Messages.KEY_RUN_CHECKPOINT, Map.of("checkpoint", currentCheckpointIndex, "total", course.checkpoints().size() - 1, "time", StringUtils.formatTime(getTime()))), 2, 20, 2));
         }
     }
 
@@ -74,16 +74,16 @@ public class CourseRun {
         var result = MyParkour.inst().getLeaderboards().log(player.getUniqueId(), course.id(), ticks);
         Component message = switch (result) {
             case FIRST_TIME ->
-                Messages.translate("myparkour.run.finish.firstTime", Map.of("course", course.displayName(), "time", time));
+                Messages.translate(Messages.KEY_RUN_FINISH_FIRST, Map.of("course", course.displayName(), "time", time));
             case NEW_PERSONAL_BEST ->
-                Messages.translate("myparkour.run.finish.personalBest", Map.of("course", course.displayName(), "time", time));
+                Messages.translate(Messages.KEY_RUN_FINISH_NEW_BEST, Map.of("course", course.displayName(), "time", time));
             case NO_CHANGE ->
-                Messages.translate("myparkour.run.finish.noChange", Map.of("course", course.displayName(), "time", time));
+                Messages.translate(Messages.KEY_RUN_FINISH_NO_CHANGE, Map.of("course", course.displayName(), "time", time));
         };
         player.sendMessage(message);
         player.teleportAsync(course.exit().toLocation()).thenAccept(success -> {
             if (!success) {
-                player.sendMessage(Messages.translate("myparkour.run.error.teleportFailed.exit"));
+                player.sendMessage(Messages.translate(Messages.KEY_RUN_EXIT_TELEPORT_FAILED));
             }
             handleExit();
         });

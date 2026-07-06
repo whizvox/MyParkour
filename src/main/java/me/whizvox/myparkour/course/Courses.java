@@ -4,6 +4,7 @@ import com.google.common.reflect.TypeToken;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import me.whizvox.myparkour.course.edit.CourseEditResult;
 import me.whizvox.myparkour.course.edit.EditableCourse;
 import me.whizvox.myparkour.util.Persistent;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -49,42 +50,42 @@ public class Courses implements Persistent<List<Course>> {
         return !byName.containsKey(name.toLowerCase());
     }
 
-    public EditResult add(EditableCourse editableCourse) {
-        if (!isNameAvailable(Objects.requireNonNull(editableCourse.getName()))) {
-            return EditResult.NAME_UNAVAILABLE;
+    public CourseEditResult add(EditableCourse editableCourse) {
+        if (!isNameAvailable(editableCourse.getName())) {
+            return CourseEditResult.nameUnavailable();
         }
-        while (byId.containsKey(lastId)) {
-            lastId++;
-        }
-        editableCourse.setId(lastId);
-        var result = editableCourse.toCourse();
-        if (result.left() == EditableCourse.ValidResult.VALID) {
-            Course course = result.right();
+        EditableCourse.ValidResult result = editableCourse.checkValid();
+        if (result == EditableCourse.ValidResult.VALID) {
+            while (byId.containsKey(lastId)) {
+                lastId++;
+            }
+            editableCourse.setId(lastId);
+            Course course = editableCourse.toCourse();
             byId.put(course.id(), course);
             byName.put(course.name(), course);
             byName.put(course.name().toLowerCase(), course);
-            return EditResult.SUCCESS;
+            return CourseEditResult.success();
         }
-        return EditResult.INVALID;
+        return CourseEditResult.invalid(result);
     }
 
-    public EditResult edit(EditableCourse editableCourse) {
-        var result = editableCourse.toCourse();
-        if (result.left() == EditableCourse.ValidResult.VALID) {
-            Course course = result.right();
-            Course otherCourse = byName.get(course.name().toLowerCase());
-            if (otherCourse != null && otherCourse.id() != course.id()) {
-                return EditResult.NAME_UNAVAILABLE;
-            }
+    public CourseEditResult edit(EditableCourse editableCourse) {
+        Course otherCourse = byName.get(editableCourse.getName().toLowerCase());
+        if (otherCourse != null && otherCourse.id() != editableCourse.getId()) {
+            return CourseEditResult.nameUnavailable();
+        }
+        EditableCourse.ValidResult result = editableCourse.checkValid();
+        if (result == EditableCourse.ValidResult.VALID) {
+            Course course = editableCourse.toCourse();
             if (remove(course.id())) {
                 byId.put(course.id(), course);
                 byName.put(course.name(), course);
                 byName.put(course.name().toLowerCase(), course);
-                return EditResult.SUCCESS;
+                return CourseEditResult.success();
             }
-            return EditResult.NOT_FOUND;
+            return CourseEditResult.notFound();
         }
-        return EditResult.INVALID;
+        return CourseEditResult.invalid(result);
     }
 
     public boolean remove(int id) {
@@ -119,13 +120,6 @@ public class Courses implements Persistent<List<Course>> {
     @Override
     public Type getPersistentType() {
         return new TypeToken<ArrayList<Course>>(){}.getType();
-    }
-
-    public enum EditResult {
-        SUCCESS,
-        INVALID,
-        NAME_UNAVAILABLE,
-        NOT_FOUND
     }
 
 }
